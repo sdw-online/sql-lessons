@@ -1,5 +1,7 @@
 # Interactive SQL lessons
 
+**Start here: [sdw-online.github.io/sql-lessons](https://sdw-online.github.io/sql-lessons/)** - the landing page with all 30 days, the live lessons and the course videos.
+
 Brilliant-style companion lessons for the free **30 Day SQL Challenge** on YouTube. Predict what a query returns, run it for real in your browser, then step through each clause and watch the rows move.
 
 | Day | Lesson | Video |

@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive SQL Lessons · 30 Day SQL Challenge</title>
+<meta name="description" content="Interactive companion lessons for the free 30 Day SQL Challenge. Predict what a query returns, run real SQL in your browser, then watch the rows move.">
+<meta property="og:title" content="Interactive SQL Lessons · 30 Day SQL Challenge">
+<meta property="og:description" content="Predict what a query returns, run real SQL in your browser, then watch the rows move. Nothing to install.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f7; --surface: #ffffff; --surface-2: #e9edf1; --ink: #121820; --muted: #5b6774; --line: #d5dce3;
+  --accent: #0d7c86; --accent-soft: #d4eef0; --accent-ink: #ffffff; --good: #2b8a3e; --warn: #b7791f; --bad: #c92a2a;
+  --code-bg: #0f1720; --code-ink: #e3eaf2; --code-kw: #7fd8de; --code-str: #f2c66d; --code-dim: #8a98a8;
+  --grid-dot: rgba(18, 24, 32, .07); --glow: rgba(13, 124, 134, .14); --shadow: 0 1px 2px rgba(18,24,32,.05), 0 12px 32px -12px rgba(18,24,32,.18);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+    --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+    --code-bg: #090d12; --code-ink: #e3eaf2;
+    --grid-dot: rgba(230, 237, 243, .06); --glow: rgba(60, 193, 203, .12); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+  --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+  --code-bg: #090d12; --code-ink: #e3eaf2;
+  --grid-dot: rgba(230, 237, 243, .06); --glow: rgba(60, 193, 203, .12); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; overflow-x: hidden; }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)); }
+.skip { position: absolute; left: -9999px; top: 8px; background: var(--surface); color: var(--ink); padding: 8px 12px; border-radius: 8px; z-index: 10; }
+.skip:focus { left: 16px; }
+:where(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+/* nav */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); text-decoration: none; letter-spacing: -.01em; }
+.brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font: 600 12px var(--font-mono); letter-spacing: -.02em; }
+.nav-links { display: flex; align-items: center; gap: 4px; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; padding: 8px 10px; border-radius: 8px; }
+.nav-links a:hover { color: var(--ink); }
+.btn { font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; border-radius: 10px; padding: 12px 20px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 10px; transition: transform .15s, border-color .15s, background-color .15s; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { transform: translateY(-1px); }
+.btn.ghost { background: transparent; font-size: 13px; padding: 7px 11px; border-radius: 8px; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+
+/* hero */
+.hero { position: relative; padding: 40px 0 72px; isolation: isolate; overflow: hidden; overflow: clip; }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px); background-size: 22px 22px; -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent); mask-image: linear-gradient(to bottom, #000 40%, transparent); }
+.hero::after { content: ""; position: absolute; z-index: -1; width: 620px; height: 620px; right: -160px; top: -120px; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 65%); pointer-events: none; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow .live { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); }
+.eyebrow .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(44px, 7.4vw, 84px); line-height: .96; letter-spacing: -.035em; margin: 18px 0 0; text-wrap: balance; }
+h1 .sub { display: block; color: var(--accent); }
+.promise { font-size: clamp(17px, 2vw, 20px); color: var(--muted); max-width: 34ch; margin: 22px 0 0; text-wrap: pretty; }
+.promise strong { color: var(--ink); font-weight: 600; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 32px 0 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* demo */
+.demo { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; min-width: 0; }
+.demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.demo-title { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.demo-ctl { font: 600 12px var(--font-mono); background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+.demo-ctl:hover { color: var(--ink); border-color: var(--accent); }
+.demo-code { margin: 0; background: var(--code-bg); color: var(--code-ink); font-family: var(--font-mono); font-size: 13.5px; line-height: 1.65; padding: 12px 0; overflow-x: auto; }
+.demo-code .ln { display: block; padding: 1px 16px; white-space: pre; transition: background-color .3s, color .3s, opacity .3s; opacity: .55; }
+.demo-code .ln.is-active { background: rgba(60, 193, 203, .16); opacity: 1; }
+.demo-code .ln.is-done { opacity: 1; }
+.demo-code .k { color: var(--code-kw); font-weight: 600; }
+.demo-code .s { color: var(--code-str); }
+.stages { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 14px 0; }
+.stage-btn { font: 600 11.5px var(--font-mono); padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.stage-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.rows { position: relative; margin: 12px 14px 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: height .5s cubic-bezier(.2,.7,.2,1); }
+.row { position: absolute; left: 0; right: 0; height: 36px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 72px; gap: 10px; align-items: center; padding: 0 12px; font-size: 13.5px; background: var(--surface); border-top: 1px solid var(--line); transition: transform .55s cubic-bezier(.2,.7,.2,1), opacity .4s, background-color .3s, color .3s; }
+.row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .num { font-family: var(--font-mono); text-align: right; }
+.row.head { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); border-top: 0; z-index: 2; }
+.row.is-out { opacity: .4; color: var(--muted); }
+.row.is-out span:not(.num) { text-decoration: line-through; text-decoration-color: var(--bad); }
+.row.is-gone { opacity: 0; pointer-events: none; }
+.row.is-match .dept { color: var(--accent); font-weight: 600; }
+.row.is-cut { opacity: .38; border-top: 2px dashed var(--warn); }
+.row.is-sorted .num { color: var(--accent); font-weight: 600; }
+.demo-caption { margin: 0; padding: 12px 14px 14px; font-size: 14px; color: var(--muted); min-height: 3.6em; }
+.demo-caption b { color: var(--ink); font-weight: 600; }
+
+/* sections */
+section { padding: 72px 0; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 32px; }
+h2 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.02; letter-spacing: -.025em; margin: 10px 0 0; text-wrap: balance; }
+.sec-lede { margin: 0; color: var(--muted); max-width: 52ch; }
+.band { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.step { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.step-n { font: 600 13px var(--font-mono); color: var(--accent); }
+.step h3 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.015em; line-height: 1.1; margin: 12px 0 8px; }
+.step p { margin: 0; color: var(--muted); }
+.step code, .trust code { font-family: var(--font-mono); font-size: .9em; color: var(--ink); }
+.trust { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.trust-item { display: flex; gap: 14px; align-items: flex-start; padding: 20px 24px; border-radius: 14px; background: var(--accent-soft); }
+.trust-item svg { width: 22px; height: 22px; flex: none; color: var(--accent); margin-top: 2px; }
+.trust-item p { margin: 0; }
+.trust-item strong { display: block; font-weight: 600; }
+.trust-item span { color: var(--muted); font-size: 15px; }
+
+/* days */
+.weeks { display: grid; gap: 36px; }
+.week-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; display: flex; align-items: center; gap: 12px; }
+.week-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.days { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.day { position: relative; display: flex; flex-direction: column; gap: 10px; min-height: 148px; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); min-width: 0; }
+.day-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.day-n { font: 600 12px var(--font-mono); color: var(--muted); letter-spacing: .04em; }
+.pill { font: 600 10.5px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.day h4 { font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.15; letter-spacing: -.01em; margin: 0; text-wrap: balance; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+.day .kind { font-size: 13px; color: var(--muted); margin: 0; }
+.day-actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 14px; font-weight: 600; }
+.day.is-soon { background: transparent; border-style: dashed; }
+.day.is-soon h3 { color: var(--muted); }
+.day.is-live { border-color: var(--accent); box-shadow: var(--shadow); transition: transform .2s; }
+.day.is-live:hover { transform: translateY(-2px); }
+.day.is-live .pill { background: var(--accent); color: var(--accent-ink); }
+.day.is-live .day-n { color: var(--accent); }
+.day-lesson { color: var(--ink); text-decoration: none; }
+.day-lesson::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.day-lesson:focus-visible { outline: none; }
+.day-lesson:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 3px; }
+.day-lesson .arrow { color: var(--accent); }
+.day-video { position: relative; z-index: 1; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+.day-video:hover { color: var(--accent); }
+.day .soon { font: 600 12px var(--font-mono); color: var(--muted); }
+
+/* closing */
+.closer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 36px; border-radius: 18px; background: var(--code-bg); color: var(--code-ink); }
+.closer h2 { color: #fff; margin: 0; font-size: clamp(26px, 3.6vw, 38px); }
+.closer p { margin: 10px 0 0; color: var(--code-dim); max-width: 58ch; }
+.closer a:not(.btn) { color: var(--code-kw); }
+.closer .btn.primary { background: #3cc1cb; border-color: #3cc1cb; color: #061417; }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: center; }
+.foot nav { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.foot a { color: var(--muted); }
+.foot a:hover { color: var(--accent); }
+
+@media (min-width: 1000px) { .days { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; } .day { padding: 14px 12px; } .day h4 { font-size: 16px; } }
+@media (max-width: 920px) {
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .promise { max-width: 44ch; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .trust { grid-template-columns: minmax(0, 1fr); }
+  .hero::after { width: 420px; height: 420px; right: -200px; }
+}
+@media (max-width: 560px) {
+  .nav-links a { display: none; }
+  .hero { padding: 20px 0 48px; }
+  section { padding: 52px 0; }
+  .ctas .btn { flex: 1 1 100%; justify-content: center; }
+  .days { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .day { min-height: 132px; padding: 12px; }
+  .day h4 { font-size: 16px; }
+  .demo-code { font-size: 12.5px; }
+  .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 64px; gap: 8px; padding: 0 10px; font-size: 13px; }
+  .closer { grid-template-columns: minmax(0, 1fr); padding: 24px; }
+  .closer .btn { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <header class="nav">
+    <a class="brand" href="./" aria-label="Interactive SQL lessons, home"><span class="brand-mark" aria-hidden="true">SQL</span>Stephen Data</a>
+    <div class="nav-links">
+      <a href="#days">Lessons</a>
+      <a href="#how">How it works</a>
+      <button type="button" class="btn ghost" id="theme-toggle" aria-label="Switch between light and dark theme">Theme</button>
+    </div>
+  </header>
+</div>
+
+<main id="main">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Interactive lessons <span class="live">Days 1 to 3 live</span></div>
+        <h1>30 Day SQL Challenge <span class="sub">Interactive lessons</span></h1>
+        <p class="promise">Predict what a query returns, <strong>run real SQL in your browser</strong>, then watch the rows move.</p>
+        <div class="ctas">
+          <a class="btn primary" href="day-01.html">Start Day 1
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+          <a class="btn" href="https://www.youtube.com/playlist?list=PL92LwdfbhlXF4qeI8P4bMKepuEPGtKFWx" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z"/></svg>Watch the course on YouTube</a>
+        </div>
+        <ul class="facts">
+          <li><b>Free</b> course</li>
+          <li><b>Nothing</b> to install</li>
+          <li><b>Real</b> tables from each video</li>
+        </ul>
+      </div>
+
+      <figure class="demo" aria-labelledby="demo-label" style="margin:0">
+        <div class="demo-bar">
+          <span class="demo-title" id="demo-label">How a query runs</span>
+          <button type="button" class="demo-ctl" id="demo-play" aria-pressed="true">Pause</button>
+        </div>
+        <pre class="demo-code" aria-label="Example query"><span class="ln" data-ln="select"><span class="k">SELECT</span> first_name, department, salary</span><span class="ln" data-ln="from"><span class="k">FROM</span> employees</span><span class="ln" data-ln="where"><span class="k">WHERE</span> department = <span class="s">'Engineering'</span></span><span class="ln" data-ln="order"><span class="k">ORDER BY</span> salary <span class="k">DESC</span></span><span class="ln" data-ln="limit"><span class="k">LIMIT</span> 3;</span></pre>
+        <div class="stages" role="group" aria-label="Step through the query">
+          <button type="button" class="stage-btn" data-stage="0" aria-pressed="true">FROM</button>
+          <button type="button" class="stage-btn" data-stage="1" aria-pressed="false">WHERE</button>
+          <button type="button" class="stage-btn" data-stage="2" aria-pressed="false">ORDER BY</button>
+          <button type="button" class="stage-btn" data-stage="3" aria-pressed="false">LIMIT</button>
+        </div>
+        <div class="rows" id="demo-rows" aria-hidden="true"></div>
+        <p class="demo-caption" id="demo-caption" aria-live="polite"></p>
+      </figure>
+    </div>
+  </div>
+
+  <section class="band" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">How it works</div>
+          <h2 id="how-h">Three steps per query</h2>
+        </div>
+        <p class="sec-lede">Each lesson follows one day of the video course, on the same tables you build in that day's setup script.</p>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <span class="step-n">01</span>
+          <h3>Predict</h3>
+          <p>Read the query and pick what you think it returns. Committing to an answer first is what makes it stick.</p>
+        </li>
+        <li class="step">
+          <span class="step-n">02</span>
+          <h3>Run</h3>
+          <p>Run the real query against a real database in the page. Then edit it and run your own.</p>
+        </li>
+        <li class="step">
+          <span class="step-n">03</span>
+          <h3>Watch the rows move</h3>
+          <p>Step through each clause, <code>FROM</code> to <code>LIMIT</code>, and see which rows it keeps, drops and reorders.</p>
+        </li>
+      </ol>
+      <div class="trust">
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <p><strong>Nothing is installed and nothing leaves your browser.</strong><span>The database runs inside the page. What you type stays on your device.</span></p>
+        </div>
+        <div class="trust-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+          <p><strong>The course uses PostgreSQL; the lessons use SQLite.</strong><span>Every result was checked against the course's documented output. Setup scripts and exercises are in the <a href="https://github.com/sdw-online/30-Day-SQL-Challenge" target="_blank" rel="noopener">course materials</a>.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="days" aria-labelledby="days-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">The 30 days</div>
+          <h2 id="days-h">Pick up any day</h2>
+        </div>
+        <p class="sec-lede">Days 1 to 3 have an interactive lesson now. The rest are added as they are built; each one links to its video.</p>
+      </div>
+      <div class="weeks" id="weeks"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="closer-h" style="padding-top:0">
+    <div class="wrap">
+      <div class="closer">
+        <div>
+          <h2 id="closer-h">Ten minutes. One query at a time.</h2>
+          <p>Start with Day 1: tables, rows, columns and data types, on the employees table from the first video.</p>
+        </div>
+        <a class="btn primary" href="day-01.html">Start Day 1
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>Stephen Data · 30 Day SQL Challenge</span>
+    <nav aria-label="Elsewhere">
+      <a href="https://www.youtube.com/@sdw-online" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://www.youtube.com/playlist?list=PL92LwdfbhlXF4qeI8P4bMKepuEPGtKFWx" target="_blank" rel="noopener">Course playlist</a>
+      <a href="https://github.com/sdw-online/30-Day-SQL-Challenge" target="_blank" rel="noopener">Course materials</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* theme: same contract as the day pages (?theme=dark|light, Theme button toggles data-theme) */
+  try {
+    var themeParam = new URLSearchParams(location.search).get('theme');
+    if (themeParam === 'dark' || themeParam === 'light') document.documentElement.setAttribute('data-theme', themeParam);
+  } catch (e) {}
+  var themeBtn = document.getElementById('theme-toggle');
+  themeBtn.addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  });
+
+  /* day grid. Titles: syllabus v7. Only days with a built lesson link anywhere. */
+  var DAYS = [
+    [1, 'Introduction to SQL and Databases', { lesson: 'day-01.html', video: 'https://www.youtube.com/watch?v=mFIMPhiO-N0' }],
+    [2, 'SELECT and WHERE', { lesson: 'day-02.html', video: 'https://www.youtube.com/watch?v=-0uVBtXCZ_s' }],
+    [3, 'ORDER BY and LIMIT', { lesson: 'day-03.html', video: 'https://www.youtube.com/watch?v=s86nI9dPZqY' }],
+    [4, 'Aggregate Functions and GROUP BY'],
+    [5, 'INSERT, UPDATE and DELETE'],
+    [6, 'PRIMARY KEY, FOREIGN KEY and Constraints'],
+    [7, 'Project: Freight and Logistics Report', { project: true }],
+    [8, 'NULL Handling'],
+    [9, 'String and Numeric Functions'],
+    [10, 'Date Functions and CAST'],
+    [11, 'CASE WHEN'],
+    [12, 'Subqueries and Temp Tables'],
+    [13, 'CTEs, Part 1'],
+    [14, 'Project: Fleet Intelligence Pipeline', { project: true }],
+    [15, 'JOINs, Part 1: INNER, LEFT, RIGHT and FULL OUTER'],
+    [16, 'JOINs, Part 2: CROSS JOIN and Self Joins'],
+    [17, 'UNION and UNION ALL'],
+    [18, 'Normalisation and Denormalisation'],
+    [19, 'CTEs, Part 2: Recursive CTEs'],
+    [20, 'Data Modelling: Star Schema'],
+    [21, 'Project: Recruitment Analytics', { project: true }],
+    [22, 'Window Functions, Part 1: ROW_NUMBER, RANK and DENSE_RANK'],
+    [23, 'Window Functions, Part 2: LAG, LEAD and QUALIFY'],
+    [24, 'SCD Types and MERGE'],
+    [25, 'Views and Materialised Views'],
+    [26, 'Functions and Stored Procedures'],
+    [27, 'Triggers'],
+    [28, 'Indexes'],
+    [29, 'Information Schema'],
+    [30, 'Capstone: FinTech Lending Analytics Platform', { project: true }]
+  ];
+  var WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  var weeksEl = document.getElementById('weeks');
+  var html = '';
+  WEEKS.forEach(function (w, i) {
+    var label = i < 4 ? 'Week ' + (i + 1) : 'Final days';
+    html += '<div><h3 class="week-label">' + label + ' · Days ' + w[0] + ' to ' + w[1] + '</h3><ul class="days">';
+    DAYS.slice(w[0] - 1, w[1]).forEach(function (d) {
+      var n = d[0], title = d[1], o = d[2] || {};
+      var kind = o.project ? 'Project day' : '';
+      if (o.lesson) {
+        html += '<li class="day is-live"><div class="day-top"><span class="day-n">DAY ' + pad(n) + '</span><span class="pill">Live</span></div>' +
+          '<h4>' + esc(title) + '</h4>' +
+          '<div class="day-actions"><a class="day-lesson" href="' + o.lesson + '">Open lesson <span class="arrow" aria-hidden="true">&rarr;</span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">: Day ' + n + '</span></a>' +
+          '<a class="day-video" href="' + o.video + '" target="_blank" rel="noopener">Video<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"> for Day ' + n + ' on YouTube</span></a></div></li>';
+      } else {
+        html += '<li class="day is-soon"><div class="day-top"><span class="day-n">DAY ' + pad(n) + '</span>' + (kind ? '<span class="pill">Project</span>' : '') + '</div>' +
+          '<h4>' + esc(title) + '</h4><div class="day-actions"><span class="soon">Coming soon</span></div></li>';
+      }
+    });
+    html += '</ul></div>';
+  });
+  weeksEl.innerHTML = html;
+
+  /* hero demo: the Day 1 employees table, stepped clause by clause. Pure CSS/JS, no engine. */
+  var ROWS = [
+    { id: 1, name: 'Amara', dept: 'Engineering', salary: 72000 },
+    { id: 2, name: 'Ravi', dept: 'Engineering', salary: 68000 },
+    { id: 3, name: 'Isla', dept: 'Analytics', salary: 55000 },
+    { id: 4, name: 'Kwame', dept: 'Analytics', salary: 65000 },
+    { id: 5, name: 'Freya', dept: 'Marketing', salary: 52000 },
+    { id: 6, name: 'Mateo', dept: 'Engineering', salary: 85000 },
+    { id: 7, name: 'Priya', dept: 'Product', salary: 58000 },
+    { id: 8, name: 'Finn', dept: 'Engineering', salary: 70000 }
+  ];
+  var RH = 36;
+  var rowsEl = document.getElementById('demo-rows');
+  var capEl = document.getElementById('demo-caption');
+  var playBtn = document.getElementById('demo-play');
+  var stageBtns = Array.prototype.slice.call(document.querySelectorAll('.stage-btn'));
+  var lines = {};
+  Array.prototype.forEach.call(document.querySelectorAll('.demo-code .ln'), function (l) { lines[l.getAttribute('data-ln')] = l; });
+
+  var head = document.createElement('div');
+  head.className = 'row head';
+  head.innerHTML = '<span>first_name</span><span>department</span><span class="num">salary</span>';
+  rowsEl.appendChild(head);
+  var els = {};
+  ROWS.forEach(function (r) {
+    var e = document.createElement('div');
+    e.className = 'row';
+    e.innerHTML = '<span>' + r.name + '</span><span class="dept">' + r.dept + '</span><span class="num">' + r.salary.toLocaleString('en-GB') + '</span>';
+    rowsEl.appendChild(e);
+    els[r.id] = e;
+  });
+
+  var eng = ROWS.filter(function (r) { return r.dept === 'Engineering'; });
+  var sorted = eng.slice().sort(function (a, b) { return b.salary - a.salary; });
+  var STAGES = [
+    { lines: ['select', 'from'], cap: '<b>FROM employees</b> starts with every row in the table: 8 people.' },
+    { lines: ['where'], cap: '<b>WHERE</b> tests each row. 4 are not in Engineering, so they drop out.' },
+    { lines: ['order'], cap: '<b>ORDER BY salary DESC</b> puts the 4 survivors highest salary first.' },
+    { lines: ['limit'], cap: '<b>LIMIT 3</b> keeps the top 3. Ravi is cut. That is the result.' }
+  ];
+  var ORDER = ['select', 'from', 'where', 'order', 'limit'];
+
+  function place(e, slot) { e.style.transform = 'translateY(' + (slot * RH) + 'px)'; }
+  function render(s) {
+    stageBtns.forEach(function (b, i) { b.setAttribute('aria-pressed', i === s ? 'true' : 'false'); });
+    var activeIdx = ORDER.indexOf(STAGES[s].lines[STAGES[s].lines.length - 1]);
+    ORDER.forEach(function (k, i) {
+      lines[k].classList.toggle('is-active', STAGES[s].lines.indexOf(k) !== -1);
+      lines[k].classList.toggle('is-done', i < activeIdx && STAGES[s].lines.indexOf(k) === -1);
+    });
+    capEl.innerHTML = STAGES[s].cap;
+    place(head, 0);
+    var visible;
+    if (s === 0 || s === 1) {
+      ROWS.forEach(function (r, i) {
+        var e = els[r.id];
+        e.className = 'row';
+        if (s === 1) e.classList.add(r.dept === 'Engineering' ? 'is-match' : 'is-out');
+        place(e, i + 1);
+      });
+      visible = ROWS.length;
+    } else {
+      ROWS.forEach(function (r) {
+        var e = els[r.id];
+        if (r.dept !== 'Engineering') { e.className = 'row is-gone'; }
+      });
+      sorted.forEach(function (r, i) {
+        var e = els[r.id];
+        e.className = 'row is-match is-sorted';
+        if (s === 3 && i >= 3) e.classList.add('is-cut');
+        place(e, i + 1);
+      });
+      /* parked rows sit below the visible block so they never overlap the survivors */
+      ROWS.filter(function (r) { return r.dept !== 'Engineering'; }).forEach(function (r, i) { place(els[r.id], sorted.length + 1 + i); });
+      visible = sorted.length;
+    }
+    rowsEl.style.height = ((visible + 1) * RH) + 'px';
+  }
+
+  var stage = 0, timer = null, playing = true;
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function tick() { stage = (stage + 1) % STAGES.length; render(stage); schedule(); }
+  function schedule() { clearTimeout(timer); if (playing) timer = setTimeout(tick, stage === 3 ? 3600 : 2400); }
+  function setPlaying(p) {
+    playing = p;
+    playBtn.textContent = p ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-pressed', p ? 'true' : 'false');
+    if (p) schedule(); else clearTimeout(timer);
+  }
+  playBtn.addEventListener('click', function () { setPlaying(!playing); });
+  stageBtns.forEach(function (b, i) {
+    b.addEventListener('click', function () { stage = i; render(stage); setPlaying(false); });
+  });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) clearTimeout(timer); else if (playing) schedule(); });
+
+  render(0);
+  if (reduce) { stage = 3; render(3); setPlaying(false); } else { setPlaying(true); }
+})();
+</script>
+</body>
+</html>
