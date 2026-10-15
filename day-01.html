@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 1: Intro to SQL · Interactive SQL</title>
+<meta name="description" content="Tables, rows, columns and data types, on the employees table you created in Day 1. Predict what each query returns, run it, then watch which rows it touches.">
+<meta property="og:title" content="Day 1: Introduction to SQL &amp; Databases · 30 Day SQL Challenge">
+<meta property="og:description" content="Tables, rows, columns and data types, on the employees table you created in Day 1. Predict what each query returns, run it, then watch which rows it touches.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f7; --surface: #ffffff; --surface-2: #e9edf1; --ink: #121820; --muted: #5b6774; --line: #d5dce3;
+  --accent: #0d7c86; --accent-soft: #d4eef0; --accent-ink: #ffffff; --good: #2b8a3e; --warn: #b7791f; --bad: #c92a2a;
+  --code-bg: #0f1720; --code-ink: #e3eaf2;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+    --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+    --code-bg: #090d12; --code-ink: #e3eaf2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+  --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+  --code-bg: #090d12; --code-ink: #e3eaf2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding: 24px max(16px, env(safe-area-inset-right, 0px)) 56px max(16px, env(safe-area-inset-left, 0px));
+}
+.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 20px; min-width: 0; }
+header.top { display: grid; gap: 8px; }
+.toprow { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 6vw, 48px); line-height: 1.02; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 65ch; color: var(--muted); }
+.lede a { color: var(--accent); }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.btn { font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px 14px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.ghost { background: transparent; font-size: 13px; padding: 6px 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; }
+footer.foot { color: var(--muted); font-size: 13px; max-width: 75ch; border-top: 1px solid var(--line); padding-top: 14px; }
+footer.foot a { color: var(--accent); }
+
+.d-lesson { display: grid; gap: 16px; min-width: 0; }
+.lsn-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.lsn-dots { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lsn-dot { width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 12px var(--font-mono); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.lsn-dot.is-done { background: var(--accent-soft); color: var(--ink); border-color: transparent; }
+.lsn-dot[aria-current="step"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.lsn-dotline { width: 14px; height: 1px; background: var(--line); }
+.lsn-status { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.lsn-status.is-bad { color: var(--bad); }
+.lsn-step { display: grid; gap: 14px; min-width: 0; }
+.lsn-kicker { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lsn-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 3vw, 24px); line-height: 1.15; margin: 2px 0 0; }
+.lsn-text { margin: 0; max-width: 65ch; }
+.lsn-code { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius); padding: 10px 0; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; overflow-x: auto; margin: 0; min-width: 0; }
+.lsn-code .ln { display: block; padding: 1px 14px; white-space: pre; transition: background .25s, color .25s; }
+.lsn-code .ln.is-active { background: var(--accent-soft); color: var(--ink); }
+.lsn-code b { font-weight: 600; }
+.lsn-predict { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 14px; margin: 0; min-width: 0; background: var(--surface); }
+.lsn-predict legend { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
+.lsn-q { margin: 0; font-weight: 600; }
+.lsn-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+.lsn-opt { display: flex; gap: 10px; align-items: baseline; text-align: left; font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; min-width: 0; }
+.lsn-opt .lsn-letter { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--muted); }
+.lsn-opt:hover:not(:disabled) { border-color: var(--accent); }
+.lsn-opt.is-wrong { border-color: var(--bad); color: var(--muted); }
+.lsn-opt.is-wrong span:last-child { text-decoration: line-through; }
+.lsn-opt.is-right { border-color: var(--good); background: var(--accent-soft); color: var(--ink); font-weight: 600; animation: lsn-pop .4s ease-out; }
+.lsn-opt:disabled { cursor: default; }
+.lsn-fb { margin: 10px 0 0; max-width: 65ch; }
+.lsn-fb:empty { display: none; }
+.lsn-fb .tag-good { color: var(--good); font-weight: 600; }
+.lsn-fb .tag-bad { color: var(--bad); font-weight: 600; }
+.lsn-fbact { margin-top: 8px; }
+.lsn-runrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.lsn-hint { font-size: 13px; color: var(--muted); }
+.lsn-stages { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lsn-stages .arrow { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.lsn-sbtn { font-family: var(--font-mono); font-size: 12.5px; padding: 6px 10px; }
+.lsn-sbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lsn-scroll { overflow-x: auto; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.lsn-flowbox { max-height: 470px; overflow-y: auto; }
+.lsn-row { display: grid; gap: 0 10px; padding: 6px 12px; border-top: 1px solid var(--line); font-size: 13.5px; align-items: center; background: var(--surface); transition: opacity .35s, background-color .35s; position: relative; }
+.lsn-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lsn-row.is-head { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-top: 0; background: var(--surface-2); position: sticky; top: 0; z-index: 2; }
+.lsn-row .num { font-family: var(--font-mono); text-align: right; }
+.lsn-row .mono { font-family: var(--font-mono); font-size: 13px; }
+.lsn-row .note { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.lsn-row.is-keep .note { color: var(--good); }
+.lsn-row.is-out { opacity: .42; }
+.lsn-row.is-out .strike { text-decoration: line-through; }
+.lsn-row.is-out .note { color: var(--bad); }
+.lsn-row.is-cut { opacity: .42; }
+.lsn-row.is-cut .note { color: var(--warn); }
+.lsn-row.cut-start { border-top: 2px dashed var(--warn); }
+.lsn-flow.is-narrow .lsn-row { gap: 0 8px; padding: 6px 10px; font-size: 13px; }
+.lsn-flow.is-narrow .lsn-row .note { grid-column: 2 / -1; font-size: 11.5px; }
+.lsn-flow.is-narrow .lsn-row .note:empty { display: none; }
+.lsn-flow.is-narrow .lsn-row.is-head > span:last-child { display: none; }
+.lsn-views { display: grid; gap: 14px; min-width: 0; }
+.lsn-view { display: grid; gap: 6px; min-width: 0; }
+.lsn-views.is-multi .lsn-flowbox { max-height: 300px; }
+.lsn-row.g-alt { background: var(--surface-2); }
+.lsn-row.g-start { border-top: 2px solid var(--muted); }
+.lsn-row > span.is-changed { color: var(--accent); font-weight: 600; }
+.lsn-row[hidden] { display: none; }
+.lsn-modified { margin: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+.lsn-caption { margin: 0; color: var(--muted); font-size: 14px; min-height: 1.5em; }
+.lsn-result { display: grid; gap: 8px; min-width: 0; }
+.lsn-result:empty { display: none; }
+.lsn-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.lsn-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.lsn-table th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); text-align: left; font-weight: 600; padding: 7px 12px; background: var(--surface-2); white-space: nowrap; }
+.lsn-table td { padding: 7px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
+.lsn-table td.n { font-family: var(--font-mono); text-align: right; }
+.lsn-table th.n { text-align: right; }
+.lsn-note { margin: 0; font-size: 13px; color: var(--muted); }
+.lsn-error { margin: 0; color: var(--bad); font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; padding: 10px 12px; border: 1px solid var(--bad); border-radius: var(--radius); background: var(--surface); }
+.lsn-editor { width: 100%; min-height: 150px; resize: vertical; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: block; }
+.lsn-ideas { display: flex; flex-wrap: wrap; gap: 6px; }
+.lsn-idea { cursor: pointer; }
+.lsn-nav { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.lsn-nav .pos { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.d-lesson button:focus-visible, .d-lesson textarea:focus-visible, .lsn-scroll:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes lsn-pop { 0% { transform: scale(.96); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@media (max-width: 560px) {
+  .stage { padding: 12px; }
+  .lsn-opts { grid-template-columns: 1fr 1fr; }
+  .lsn-code { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="toprow">
+      <div class="eyebrow">30 Day SQL Challenge · Day 01 · interactive</div>
+      <button type="button" class="btn ghost" id="theme-toggle" aria-label="Switch between light and dark theme">Theme</button>
+    </div>
+    <h1>Introduction to SQL &amp; Databases</h1>
+    <p class="lede">Tables, rows, columns and data types, on the employees table you created in Day 1. Predict what each query returns, run it, then watch which rows it touches. <a href="https://www.youtube.com/watch?v=mFIMPhiO-N0" target="_blank" rel="noopener">Watch the Day 1 video</a>.</p>
+  </header>
+  <main class="stage"><div id="lesson" class="d-lesson" data-day="1"></div></main>
+  <footer class="foot">The tables are the ones from the Day 1 setup script, running in SQLite inside your browser. The course itself uses PostgreSQL, so a few things display differently: SQLite shows TRUE/FALSE as 1/0 (shown here as t/f, the way psql prints them), drops trailing zeros (shown here with two decimals where the column is NUMERIC), and words its error messages differently. Every result on this page was checked against the documented output when the page was built. <a href="https://github.com/sdw-online/30-Day-SQL-Challenge" target="_blank" rel="noopener">Course repo</a>.</footer>
+</div>
+<script>window.LESSON = {"day":1,"title":"Introduction to SQL & Databases","display":{"is_active":"bool"},"tables":{"employees":{"idColumn":"employee_id","ids":[1,2,3,4,5,6,7,8,9,10],"rows":{"1":{"employee_id":1,"first_name":"Amara","last_name":"Osei","email":"amara.osei@techcorp.com","department":"Engineering","job_title":"Data Engineer","salary":72000,"hire_date":"2025-01-15","is_active":1},"2":{"employee_id":2,"first_name":"Ravi","last_name":"Mehta","email":"ravi.mehta@techcorp.com","department":"Engineering","job_title":"Backend Developer","salary":68000,"hire_date":"2025-02-01","is_active":1},"3":{"employee_id":3,"first_name":"Isla","last_name":"Campbell","email":"isla.campbell@techcorp.com","department":"Analytics","job_title":"Data Analyst","salary":55000,"hire_date":"2025-03-10","is_active":1},"4":{"employee_id":4,"first_name":"Kwame","last_name":"Asante","email":"kwame.asante@techcorp.com","department":"Analytics","job_title":"Analytics Engineer","salary":65000,"hire_date":"2025-01-20","is_active":1},"5":{"employee_id":5,"first_name":"Freya","last_name":"Lindqvist","email":"freya.lindqvist@techcorp.com","department":"Marketing","job_title":"Marketing Analyst","salary":52000,"hire_date":"2025-04-05","is_active":1},"6":{"employee_id":6,"first_name":"Mateo","last_name":"Rivera","email":"mateo.rivera@techcorp.com","department":"Engineering","job_title":"Senior Data Engineer","salary":85000,"hire_date":"2025-02-15","is_active":1},"7":{"employee_id":7,"first_name":"Priya","last_name":"Sharma","email":"priya.sharma@techcorp.com","department":"Product","job_title":"Product Analyst","salary":58000,"hire_date":"2025-03-01","is_active":1},"8":{"employee_id":8,"first_name":"Finn","last_name":"O'Brien","email":"finn.obrien@techcorp.com","department":"Engineering","job_title":"DevOps Engineer","salary":70000,"hire_date":"2025-05-12","is_active":1},"9":{"employee_id":9,"first_name":"Yuki","last_name":"Tanaka","email":"yuki.tanaka@techcorp.com","department":"Analytics","job_title":"Senior Data Analyst","salary":67000,"hire_date":"2025-01-08","is_active":1},"10":{"employee_id":10,"first_name":"Sienna","last_name":"Walsh","email":"sienna.walsh@techcorp.com","department":"Marketing","job_title":"Growth Analyst","salary":54000,"hire_date":"2025-06-01","is_active":0}}}},"seedSql":"CREATE TABLE employees (\n    employee_id     INTEGER PRIMARY KEY,\n    first_name      VARCHAR(50)   NOT NULL,\n    last_name       VARCHAR(50)   NOT NULL,\n    email           VARCHAR(100)  UNIQUE NOT NULL,\n    department      VARCHAR(50)   NOT NULL,\n    job_title       VARCHAR(100)  NOT NULL,\n    salary          INTEGER       NOT NULL,\n    hire_date       DATE          NOT NULL,\n    is_active       BOOLEAN       DEFAULT TRUE\n);\nINSERT INTO employees (first_name, last_name, email, department, job_title, salary, hire_date, is_active)\nVALUES\n    ('Amara',  'Osei',      'amara.osei@techcorp.com',      'Engineering',  'Data Engineer',          72000, '2025-01-15', TRUE),\n    ('Ravi',   'Mehta',     'ravi.mehta@techcorp.com',       'Engineering',  'Backend Developer',      68000, '2025-02-01', TRUE),\n    ('Isla',   'Campbell',  'isla.campbell@techcorp.com',     'Analytics',    'Data Analyst',           55000, '2025-03-10', TRUE),\n    ('Kwame',  'Asante',    'kwame.asante@techcorp.com',     'Analytics',    'Analytics Engineer',     65000, '2025-01-20', TRUE),\n    ('Freya',  'Lindqvist', 'freya.lindqvist@techcorp.com',  'Marketing',    'Marketing Analyst',      52000, '2025-04-05', TRUE),\n    ('Mateo',  'Rivera',    'mateo.rivera@techcorp.com',     'Engineering',  'Senior Data Engineer',   85000, '2025-02-15', TRUE),\n    ('Priya',  'Sharma',    'priya.sharma@techcorp.com',     'Product',      'Product Analyst',        58000, '2025-03-01', TRUE),\n    ('Finn',   'O''Brien',  'finn.obrien@techcorp.com',      'Engineering',  'DevOps Engineer',        70000, '2025-05-12', TRUE),\n    ('Yuki',   'Tanaka',    'yuki.tanaka@techcorp.com',      'Analytics',    'Senior Data Analyst',    67000, '2025-01-08', TRUE),\n    ('Sienna', 'Walsh',     'sienna.walsh@techcorp.com',     'Marketing',    'Growth Analyst',         54000, '2025-06-01', FALSE);","steps":[{"kicker":"Step 1 · Shape check","title":"COUNT(*) counts every row","concept":["Knowing the size of your dataset is the first thing you should check. COUNT(*) counts every row in the table, regardless of what is in those rows.","AS total_employees gives the result a descriptive name instead of the generic count."],"lines":["SELECT COUNT(*) AS total_employees","FROM employees;"],"sql":"SELECT COUNT(*) AS total_employees\nFROM employees;","kind":"select","before":null,"verify":null,"display":{},"question":"What number does total_employees show?","right":"Ten rows, so total_employees is 10. Sienna's is_active = FALSE makes no difference to COUNT(*).","dialectNote":null,"views":[{"table":"employees","columns":["first_name","department","is_active"],"label":null}],"options":[{"letter":"A","text":"1","ok":false,"why":"One row comes back, but the number inside it is the count of every row in the table."},{"letter":"B","text":"9","ok":false,"why":"Sienna is inactive, but COUNT(*) counts every row regardless of what is in it."},{"letter":"C","text":"10","ok":true,"why":""}],"stages":[{"label":"FROM","lines":[1],"caption":"FROM employees: start with every row in the table.","views":{"employees":{"order":[1,2,3,4,5,6,7,8,9,10],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"COUNT(*)","lines":[0],"caption":"COUNT(*) walks every row, active or not, and returns one number.","views":{"employees":{"order":[1,2,3,4,5,6,7,8,9,10],"out":{},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1},"notes":{"1":"counted: 1 of 10","2":"counted: 2 of 10","3":"counted: 3 of 10","4":"counted: 4 of 10","5":"counted: 5 of 10","6":"counted: 6 of 10","7":"counted: 7 of 10","8":"counted: 8 of 10","9":"counted: 9 of 10","10":"counted: 10 of 10"},"cutStart":null,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["total_employees"],"values":[[10]],"modified":null,"error":null},"sourceRef":"01-lesson.md, Counting what you have"},{"kicker":"Step 2 · DATE","title":"A DATE column sorts by the calendar","concept":["The DATE type stores dates as YYYY-MM-DD. Because the database understands them as real calendar dates, it can compare them and sort them.","ORDER BY hire_date sorts the results chronologically, from earliest to latest."],"lines":["SELECT first_name, hire_date","FROM employees","ORDER BY hire_date;"],"sql":"SELECT first_name, hire_date\nFROM employees\nORDER BY hire_date;","kind":"select","before":null,"verify":null,"display":{},"question":"Who comes first in the result?","right":"Yuki was hired on 2025-01-08, the earliest date, so she comes first even though she is employee 9.","dialectNote":null,"views":[{"table":"employees","columns":["first_name","hire_date"],"label":null}],"options":[{"letter":"A","text":"Amara","ok":false,"why":"Amara is employee_id 1, the first row stored. ORDER BY ignores storage order; Yuki was hired on 2025-01-08, a week before Amara."},{"letter":"B","text":"Yuki","ok":true,"why":""},{"letter":"C","text":"Sienna","ok":false,"why":"Sienna was hired last, on 2025-06-01. ORDER BY sorts ascending unless you say otherwise, so the earliest date comes first."}],"stages":[{"label":"FROM","lines":[1],"caption":"FROM employees: the rows in the order they were stored, by employee_id.","views":{"employees":{"order":[1,2,3,4,5,6,7,8,9,10],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"ORDER BY","lines":[2],"caption":"ORDER BY hire_date: the rows move into calendar order, earliest first.","views":{"employees":{"order":[9,1,4,2,6,7,3,5,8,10],"out":{},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1},"notes":{"1":"#2 · hired 2025-01-15","2":"#4 · hired 2025-02-01","3":"#7 · hired 2025-03-10","4":"#3 · hired 2025-01-20","5":"#8 · hired 2025-04-05","6":"#5 · hired 2025-02-15","7":"#6 · hired 2025-03-01","8":"#9 · hired 2025-05-12","9":"#1 · hired 2025-01-08","10":"#10 · hired 2025-06-01"},"cutStart":null,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["first_name","hire_date"],"values":[["Yuki","2025-01-08"],["Amara","2025-01-15"],["Kwame","2025-01-20"],["Ravi","2025-02-01"],["Mateo","2025-02-15"],["Priya","2025-03-01"],["Isla","2025-03-10"],["Freya","2025-04-05"],["Finn","2025-05-12"],["Sienna","2025-06-01"]],"modified":null,"error":null},"sourceRef":"01-lesson.md, Date type: DATE"},{"kicker":"Step 3 · BOOLEAN","title":"Filtering on a TRUE or FALSE column","concept":["BOOLEAN stores exactly two values: TRUE or FALSE. It is perfect for yes or no data, like whether an employee is active.","WHERE is_active = TRUE keeps only the rows where that value is TRUE."],"lines":["SELECT first_name, department, is_active","FROM employees","WHERE is_active = TRUE;"],"sql":"SELECT first_name, department, is_active\nFROM employees\nWHERE is_active = TRUE;","kind":"select","before":null,"verify":null,"display":{},"question":"How many rows come back?","right":"Nine active employees come back. Sienna, the one inactive employee, is filtered out.","dialectNote":"PostgreSQL prints TRUE as t; SQLite stores it as 1, shown here as t.","views":[{"table":"employees","columns":["first_name","department","is_active"],"label":null}],"options":[{"letter":"A","text":"1 row","ok":false,"why":"One is the number of inactive employees. WHERE keeps the rows where the condition is true, so this returns everyone else."},{"letter":"B","text":"9 rows","ok":true,"why":""},{"letter":"C","text":"10 rows","ok":false,"why":"Sienna's is_active is FALSE, so she fails the test and is filtered out."}],"stages":[{"label":"FROM","lines":[1],"caption":"FROM employees: all ten employees.","views":{"employees":{"order":[1,2,3,4,5,6,7,8,9,10],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"WHERE","lines":[2],"caption":"WHERE is_active = TRUE: one row fails the test and drops out.","views":{"employees":{"order":[1,2,3,4,5,6,7,8,9,10],"out":{"10":1},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1},"notes":{"1":"keep: is_active is t","2":"keep: is_active is t","3":"keep: is_active is t","4":"keep: is_active is t","5":"keep: is_active is t","6":"keep: is_active is t","7":"keep: is_active is t","8":"keep: is_active is t","9":"keep: is_active is t","10":"drop: is_active is f"},"cutStart":null,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["first_name","department","is_active"],"values":[["Amara","Engineering",1],["Ravi","Engineering",1],["Isla","Analytics",1],["Kwame","Analytics",1],["Freya","Marketing",1],["Mateo","Engineering",1],["Priya","Product",1],["Finn","Engineering",1],["Yuki","Analytics",1]],"modified":null,"error":null},"sourceRef":"01-lesson.md, Boolean type: BOOLEAN, Filtering with booleans"}],"turn":{"default":"SELECT employee_id, first_name, last_name\nFROM employees;","ideas":[{"t":"Look up employee 1","q":"SELECT first_name, email\nFROM employees\nWHERE employee_id = 1;"},{"t":"The first three IDs","q":"SELECT employee_id, first_name, salary\nFROM employees\nWHERE employee_id \u003c= 3;"},{"t":"Who is active?","q":"SELECT first_name, department, is_active\nFROM employees;"}]},"turnTable":"employees"};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-asm.js" integrity="sha384-lJQGJ26r89i4hDPcMDnFg2BHiI4bG8U6LYvE+KO1QalxaV6JPstYbnO+7gKh0RwD" crossorigin="anonymous"></script>
+<script>
+/* Interactive lesson runtime. Generalised from the Feature Lab prototype (demos/lesson.js, 15 Oct 2026).
+ * Reads window.LESSON, which build-lessons.js bakes into each day-NN.html. Every stage state (for every table
+ * a step shows) and every expected result in LESSON was computed at build time by the same sql.js build this
+ * page loads and asserted against the day's documented output, so the step-through never depends on the engine.
+ * SELECT steps run on the page's database; UPDATE/DELETE steps, and steps with a prelude, run on a fresh copy
+ * every time, so Run is repeatable.
+ * Deep links: ?answer=B preselects a predict answer (on the step named by #step-N, else step 1);
+ * #step-N opens step N; ?theme=dark|light forces a theme. */
+(function () {
+  'use strict';
+  var L = window.LESSON;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  var KW = /\b(SELECT|DISTINCT|FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|OFFSET|AS|DESC|ASC|IN|AND|OR|NOT|COUNT|SUM|AVG|MIN|MAX|ROUND|TRUE|FALSE|BETWEEN|LIKE|JOIN|ON|UPDATE|SET|DELETE|INSERT INTO|VALUES|NULL|IS)\b/g;
+  function hl(line) { return esc(line).replace(KW, '<b>$1</b>'); }
+  function h(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function reduceMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+  function fmtWith(display, col, v) {
+    if (v === null || v === undefined) return null;
+    var d = display[col] || L.display[col];
+    if (d === 'bool') return v === 1 || v === true ? 't' : v === 0 || v === false ? 'f' : String(v);
+    if (d && typeof d.decimals === 'number' && typeof v === 'number') return v.toFixed(d.decimals);
+    return String(v);
+  }
+
+  var params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { params = { get: function () { return null; } }; }
+  var themeParam = params.get('theme');
+  if (themeParam === 'dark' || themeParam === 'light') document.documentElement.setAttribute('data-theme', themeParam);
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme');
+      if (!cur) cur = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  function resultTable(columns, values, display, label) {
+    var numCols = columns.map(function (c, ci) {
+      return values.length > 0 && values.every(function (row) { return typeof row[ci] === 'number' || row[ci] === null; });
+    });
+    var html = '<table class="lsn-table"><thead><tr>' + columns.map(function (c, ci) {
+      return '<th scope="col"' + (numCols[ci] ? ' class="n"' : '') + '>' + esc(c) + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+    values.slice(0, 200).forEach(function (row) {
+      html += '<tr>' + row.map(function (v, ci) {
+        var f = fmtWith(display || {}, columns[ci], v);
+        return '<td' + (numCols[ci] ? ' class="n"' : '') + '>' + (f === null ? '<span class="lsn-note">NULL</span>' : esc(f)) + '</td>';
+      }).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    var wrap = h('div', 'lsn-scroll', html);
+    wrap.tabIndex = 0;
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', label || 'Query result');
+    return wrap;
+  }
+
+  function mount(el) {
+    var SQL = null, db = null, engine = 'loading';
+    var STEPS = L.steps;
+    var TOTAL = STEPS.length + 1;
+    var current = 0, timers = [];
+    var turnText = L.turn.default;
+    var progress = STEPS.map(function () { return { wrong: {}, solved: false, revealed: false, ran: false, stage: 0, result: null, fb: '' }; });
+
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+    var top = h('div', 'lsn-top');
+    var dots = h('div', 'lsn-dots');
+    dots.setAttribute('role', 'group');
+    dots.setAttribute('aria-label', 'Lesson progress');
+    var status = h('div', 'lsn-status', 'SQL engine loading…');
+    status.id = 'lesson-engine';
+    status.setAttribute('aria-live', 'polite');
+    top.appendChild(dots); top.appendChild(status);
+
+    var stepHost = h('div', 'lsn-step');
+    var nav = h('div', 'lsn-nav');
+    var backBtn = h('button', 'btn', 'Back'); backBtn.type = 'button'; backBtn.id = 'lesson-back';
+    var pos = h('span', 'pos');
+    var nextBtn = h('button', 'btn primary', 'Next'); nextBtn.type = 'button'; nextBtn.id = 'lesson-next';
+    nav.appendChild(backBtn); nav.appendChild(pos); nav.appendChild(nextBtn);
+    backBtn.addEventListener('click', function () { go(current - 1); });
+    nextBtn.addEventListener('click', function () { go(current + 1); });
+    el.appendChild(top); el.appendChild(stepHost); el.appendChild(nav);
+
+    function renderDots() {
+      dots.innerHTML = '';
+      for (var i = 0; i < TOTAL; i++) {
+        (function (i) {
+          if (i > 0) dots.appendChild(h('span', 'lsn-dotline'));
+          var label = i < STEPS.length ? STEPS[i].title : 'Your turn';
+          var b = h('button', 'lsn-dot', i < STEPS.length ? String(i + 1) : '→');
+          b.type = 'button';
+          b.id = 'lesson-dot-' + (i + 1);
+          b.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + label);
+          b.title = label;
+          if (i === current) b.setAttribute('aria-current', 'step');
+          if (i < STEPS.length && (progress[i].solved || progress[i].revealed)) b.classList.add('is-done');
+          b.addEventListener('click', function () { go(i); });
+          dots.appendChild(b);
+        })(i);
+      }
+      backBtn.disabled = current === 0;
+      nextBtn.disabled = current === TOTAL - 1;
+      nextBtn.textContent = current === STEPS.length - 1 ? 'Your turn' : 'Next';
+      pos.textContent = (current + 1) + ' of ' + TOTAL;
+    }
+
+    function go(i, opts) {
+      if (i < 0 || i >= TOTAL) return;
+      clearTimers();
+      current = i;
+      renderDots();
+      if (i < STEPS.length) renderStep(i); else renderTurn();
+      try { history.replaceState(null, '', window.location.pathname + window.location.search + '#step-' + (i + 1)); } catch (e) {}
+      if (!(opts && opts.initial)) { try { el.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) {} }
+    }
+
+    function setStatus() {
+      if (engine === 'ready') { status.textContent = 'SQLite running in your browser'; status.classList.remove('is-bad'); }
+      else if (engine === 'failed') { status.textContent = 'SQL engine did not load · showing expected rows'; status.classList.add('is-bad'); }
+      else status.textContent = 'SQL engine loading…';
+      el.setAttribute('data-engine', engine);
+    }
+
+    function freshDb(before) {
+      var d = new SQL.Database();
+      d.run(L.seedSql);
+      if (before) d.run(before);
+      return d;
+    }
+
+    /* Run a step for real. SELECT without prelude: the shared database. Anything else: a fresh copy. */
+    function runStep(S) {
+      if (!SQL) return null;
+      var useFresh = S.kind === 'dml' || !!S.before;
+      var d = useFresh ? freshDb(S.before) : db;
+      var out = { modified: null, error: null, res: null };
+      try {
+        if (S.kind === 'dml') { d.run(S.sql); out.modified = d.getRowsModified(); }
+        else { var r = d.exec(S.sql); out.res = r.length ? r[r.length - 1] : null; }
+      } catch (e) { out.error = String(e && e.message ? e.message : e); }
+      if (S.verify) {
+        try { var v = d.exec(S.verify); out.res = v.length ? v[v.length - 1] : null; } catch (e2) { out.error = out.error || String(e2.message || e2); }
+      }
+      if (useFresh) { try { d.close(); } catch (e3) {} }
+      return out;
+    }
+
+    function runSql(sql) {
+      if (!db) return { error: 'The SQL engine is not available in this page, so queries cannot run here.' };
+      try { var res = db.exec(sql); return { res: res.length ? res[res.length - 1] : null }; }
+      catch (e) { return { error: String(e && e.message ? e.message : e) }; }
+    }
+
+    var pickers = {};
+
+    function buildView(V, narrow) {
+      var T = L.tables[V.table];
+      var cols = V.columns;
+      var tmpl = narrow
+        ? '34px ' + cols.map(function () { return 'minmax(0,1fr)'; }).join(' ')
+        : '44px ' + cols.map(function () { return 'minmax(96px,1fr)'; }).join(' ') + ' minmax(180px,1.4fr)';
+      var minW = narrow ? 0 : 44 + cols.length * 112 + 200;
+      var box = h('div', 'lsn-view');
+      box.appendChild(h('p', 'lsn-label', esc(V.label || ('Rows of ' + V.table)) + ' · ' + T.ids.length + ' rows'));
+      var scroll = h('div', 'lsn-scroll lsn-flowbox');
+      scroll.tabIndex = 0;
+      scroll.setAttribute('role', 'region');
+      scroll.setAttribute('aria-label', 'Rows of the ' + V.table + ' table as each clause runs');
+      scroll.setAttribute('data-view', V.table);
+      var flow = h('div', 'lsn-flow' + (narrow ? ' is-narrow' : ''));
+      if (minW) flow.style.minWidth = minW + 'px';
+      var headRow = h('div', 'lsn-row is-head', '<span class="num" title="' + esc(T.idColumn) + '">id</span>' +
+        cols.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '<span>what happens</span>');
+      headRow.style.gridTemplateColumns = tmpl;
+      flow.appendChild(headRow);
+      var body = h('div');
+      var rowEls = {}, cellEls = {};
+      T.ids.forEach(function (id) {
+        var r = T.rows[id];
+        var row = h('div', 'lsn-row');
+        row.style.gridTemplateColumns = tmpl;
+        row.setAttribute('data-id', id);
+        row.appendChild(h('span', 'num strike', esc(id)));
+        cellEls[id] = {};
+        cols.forEach(function (c) {
+          var v = r[c];
+          var f = fmtWith({}, c, v);
+          var cell = h('span', 'strike' + (typeof v === 'number' ? ' mono' : ''), f === null ? 'NULL' : esc(f));
+          cell.setAttribute('data-base', f === null ? 'NULL' : f);
+          cellEls[id][c] = cell;
+          row.appendChild(cell);
+        });
+        row.appendChild(h('span', 'note'));
+        rowEls[id] = row;
+        body.appendChild(row);
+      });
+      flow.appendChild(body);
+      scroll.appendChild(flow);
+      box.appendChild(scroll);
+      return { box: box, body: body, rowEls: rowEls, cellEls: cellEls, cols: cols };
+    }
+
+    function applyViewState(view, st, animate) {
+      var first = {};
+      if (animate) st.order.forEach(function (id) { if (view.rowEls[id]) first[id] = view.rowEls[id].getBoundingClientRect().top; });
+      st.order.forEach(function (id) { if (view.rowEls[id]) view.body.appendChild(view.rowEls[id]); });
+      var prevGroup = null, gi = -1;
+      st.order.forEach(function (id) {
+        var e = view.rowEls[id];
+        if (!e) return;
+        e.hidden = !!(st.gone && st.gone[id]);
+        e.classList.toggle('is-out', !!st.out[id]);
+        e.classList.toggle('is-cut', !!st.cut[id]);
+        e.classList.toggle('cut-start', st.cutStart === id);
+        e.classList.toggle('is-keep', !!st.keep[id]);
+        if (st.group && st.group[id] !== undefined) {
+          if (st.group[id] !== prevGroup) { gi += 1; prevGroup = st.group[id]; e.classList.toggle('g-start', gi > 0); }
+          else e.classList.remove('g-start');
+          e.classList.toggle('g-alt', gi % 2 === 1);
+        } else { e.classList.remove('g-start'); e.classList.remove('g-alt'); }
+        view.cols.forEach(function (c) {
+          var cell = view.cellEls[id][c];
+          var over = st.vals && st.vals[id] && st.vals[id][c] !== undefined ? st.vals[id][c] : null;
+          cell.textContent = over !== null ? over : cell.getAttribute('data-base');
+          cell.classList.toggle('is-changed', over !== null);
+        });
+        e.querySelector('.note').textContent = st.notes[id] || '';
+      });
+      if (!animate) return;
+      var moved = [];
+      st.order.forEach(function (id) {
+        var e = view.rowEls[id];
+        if (!e || first[id] === undefined || e.hidden) return;
+        var dy = first[id] - e.getBoundingClientRect().top;
+        if (Math.abs(dy) > 0.5) {
+          e.style.transition = 'none';
+          e.style.transform = 'translateY(' + dy + 'px)';
+          e.style.zIndex = '1';
+          moved.push(e);
+        }
+      });
+      if (!moved.length) return;
+      void view.body.offsetHeight;
+      moved.forEach(function (e) {
+        e.style.transition = 'transform 480ms cubic-bezier(.2,.7,.2,1), opacity .35s, background-color .35s';
+        e.style.transform = '';
+      });
+      timers.push(setTimeout(function () { moved.forEach(function (e) { e.style.transition = ''; e.style.zIndex = ''; }); }, 520));
+    }
+
+    function renderStep(i) {
+      var S = STEPS[i], P = progress[i];
+      stepHost.innerHTML = '';
+      stepHost.setAttribute('data-step', String(i + 1));
+
+      var head = h('div');
+      head.appendChild(h('div', 'lsn-kicker', esc(S.kicker)));
+      head.appendChild(h('h2', 'lsn-title', esc(S.title)));
+      stepHost.appendChild(head);
+      S.concept.forEach(function (p) { stepHost.appendChild(h('p', 'lsn-text', esc(p))); });
+
+      var code = h('pre', 'lsn-code');
+      code.setAttribute('aria-label', 'Query');
+      var lineEls = S.lines.map(function (l) { var s = h('span', 'ln', hl(l)); code.appendChild(s); return s; });
+      stepHost.appendChild(code);
+
+      var fs = h('fieldset', 'lsn-predict');
+      fs.appendChild(h('legend', null, 'Predict first'));
+      fs.appendChild(h('p', 'lsn-q', esc(S.question)));
+      var opts = h('div', 'lsn-opts');
+      var fb = h('p', 'lsn-fb'); fb.id = 'lesson-fb-' + (i + 1); fb.setAttribute('aria-live', 'polite');
+      var fbAct = h('div', 'lsn-fbact');
+      var revealBtn = h('button', 'btn', 'Show the answer'); revealBtn.type = 'button'; revealBtn.id = 'lesson-reveal-' + (i + 1);
+      fbAct.appendChild(revealBtn);
+      var optEls = S.options.map(function (o, oi) {
+        var b = h('button', 'lsn-opt', '<span class="lsn-letter">' + o.letter + '</span><span>' + esc(o.text) + '</span>');
+        b.type = 'button';
+        b.id = 'lesson-s' + (i + 1) + '-opt-' + o.letter;
+        b.addEventListener('click', function () { pick(oi); });
+        opts.appendChild(b);
+        return b;
+      });
+      fs.appendChild(opts); fs.appendChild(fb); fs.appendChild(fbAct);
+      stepHost.appendChild(fs);
+
+      var runRow = h('div', 'lsn-runrow');
+      var runBtn = h('button', 'btn primary', 'Run query'); runBtn.type = 'button'; runBtn.id = 'lesson-run-' + (i + 1);
+      var hint = h('span', 'lsn-hint');
+      runRow.appendChild(runBtn); runRow.appendChild(hint);
+      stepHost.appendChild(runRow);
+
+      var stagesBar = h('div', 'lsn-stages');
+      stagesBar.setAttribute('role', 'group');
+      stagesBar.setAttribute('aria-label', 'Step through the clauses');
+      var stageBtns = S.stages.map(function (st, si) {
+        if (si > 0) stagesBar.appendChild(h('span', 'arrow', '→'));
+        var b = h('button', 'btn lsn-sbtn', esc(st.label));
+        b.type = 'button';
+        b.id = 'lesson-s' + (i + 1) + '-stage-' + (si + 1);
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () { clearTimers(); showStage(si, true); });
+        stagesBar.appendChild(b);
+        return b;
+      });
+      stepHost.appendChild(stagesBar);
+
+      var narrow = false;
+      try { narrow = window.matchMedia('(max-width: 560px)').matches; } catch (e) {}
+      var viewsHost = h('div', 'lsn-views' + (S.views.length > 1 ? ' is-multi' : ''));
+      var views = S.views.map(function (V) { var v = buildView(V, narrow); viewsHost.appendChild(v.box); v.table = V.table; return v; });
+      stepHost.appendChild(viewsHost);
+      var caption = h('p', 'lsn-caption'); caption.setAttribute('aria-live', 'polite');
+      stepHost.appendChild(caption);
+      var resultHost = h('div', 'lsn-result');
+      resultHost.id = 'lesson-result-' + (i + 1);
+      stepHost.appendChild(resultHost);
+
+      function unlocked() { return P.solved || P.revealed; }
+
+      function showStage(si, animate) {
+        P.stage = si;
+        stageBtns.forEach(function (b, bi) { b.setAttribute('aria-pressed', bi === si ? 'true' : 'false'); });
+        var lines = S.stages[si].lines || [];
+        lineEls.forEach(function (l, li) { l.classList.toggle('is-active', unlocked() && lines.indexOf(li) !== -1); });
+        views.forEach(function (v) { applyViewState(v, S.stages[si].views[v.table], animate && !reduceMotion()); });
+        caption.textContent = unlocked() ? S.stages[si].caption : 'Answer the question above to unlock Run and the clause-by-clause view.';
+        stepHost.setAttribute('data-stage', String(si + 1));
+      }
+
+      function renderResult() {
+        resultHost.innerHTML = '';
+        if (!P.ran) return;
+        var out = P.result;
+        resultHost.appendChild(h('p', 'lsn-label', 'Result'));
+        resultHost.setAttribute('data-source', out.fallback ? 'expected' : 'sqlite');
+        resultHost.setAttribute('data-error', out.error ? '1' : '0');
+        if (out.modified !== null && out.modified !== undefined) {
+          var verb = (/^\s*(\w+)/.exec(S.sql) || [, 'CHANGED'])[1].toUpperCase();
+          var m = h('p', 'lsn-modified', verb + ' ' + out.modified);
+          m.id = 'lesson-modified-' + (i + 1);
+          m.setAttribute('data-modified', String(out.modified));
+          resultHost.appendChild(m);
+        }
+        if (out.error) {
+          var er = h('p', 'lsn-error', esc((out.fallback ? 'The database rejects this statement:\n' : 'SQLite rejected it:\n') + out.error));
+          resultHost.appendChild(er);
+        }
+        if (S.verify && out.res) resultHost.appendChild(h('p', 'lsn-label', 'Then the check query'));
+        if (out.res && out.res.values.length) {
+          resultHost.appendChild(resultTable(out.res.columns, out.res.values, S.display));
+          var n = out.res.values.length;
+          var note = h('p', 'lsn-note', n + (n === 1 ? ' row' : ' rows') + (out.fallback
+            ? '. The SQL engine did not load, so these are the expected rows, worked out when this page was built.'
+            : ' returned by SQLite in your browser.') + (S.dialectNote ? ' ' + esc(S.dialectNote) : ''));
+          note.id = 'lesson-rowcount-' + (i + 1);
+          note.setAttribute('data-rows', String(n));
+          resultHost.appendChild(note);
+        } else if (!out.error && S.kind !== 'dml') {
+          resultHost.appendChild(h('p', 'lsn-note', 'The query ran. No rows came back.'));
+        } else if (out.error && S.dialectNote) {
+          resultHost.appendChild(h('p', 'lsn-note', esc(S.dialectNote)));
+        }
+      }
+
+      function refreshLock() {
+        var u = unlocked();
+        runBtn.disabled = !u;
+        stageBtns.forEach(function (b) { b.disabled = !u; });
+        hint.textContent = u ? (P.ran ? 'Use the clause buttons to replay it one step at a time.' : 'Run it, then watch the rows move.') : 'Answer the question to unlock Run.';
+        optEls.forEach(function (b, oi) {
+          var o = S.options[oi];
+          b.classList.toggle('is-wrong', !!P.wrong[oi]);
+          b.classList.toggle('is-right', u && !!o.ok);
+          b.disabled = u;
+          b.setAttribute('aria-pressed', P.wrong[oi] || (u && o.ok) ? 'true' : 'false');
+        });
+        fbAct.hidden = u || !Object.keys(P.wrong).length;
+        fb.innerHTML = P.fb;
+      }
+
+      function pick(oi) {
+        var o = S.options[oi];
+        if (unlocked()) return;
+        if (o.ok) { P.solved = true; P.fb = '<span class="tag-good">Correct.</span> ' + esc(S.right); }
+        else { P.wrong[oi] = true; P.fb = '<span class="tag-bad">Not quite.</span> ' + esc(o.why) + ' Pick again, or show the answer.'; }
+        refreshLock();
+        renderDots();
+        if (P.solved) showStage(P.stage, false);
+      }
+      pickers[i] = pick;
+
+      revealBtn.addEventListener('click', function () {
+        P.revealed = true;
+        var right = S.options.filter(function (o) { return o.ok; })[0];
+        P.fb = 'The answer is <strong>' + right.letter + ': ' + esc(right.text) + '</strong>. ' + esc(S.right);
+        refreshLock();
+        renderDots();
+        showStage(P.stage, false);
+        runBtn.focus();
+      });
+
+      runBtn.addEventListener('click', function () {
+        clearTimers();
+        var out = SQL ? runStep(S) : null;
+        if (!out) out = { res: S.expected.values.length || S.expected.columns.length ? { columns: S.expected.columns, values: S.expected.values } : null, modified: S.expected.modified, error: S.expected.error, fallback: true };
+        P.ran = true; P.result = out;
+        refreshLock();
+        renderResult();
+        var last = S.stages.length - 1;
+        if (reduceMotion()) { showStage(last, false); return; }
+        showStage(0, false);
+        for (var si = 1; si <= last; si++) {
+          (function (si) { timers.push(setTimeout(function () { showStage(si, true); }, si * 1100)); })(si);
+        }
+      });
+
+      refreshLock();
+      showStage(P.stage, false);
+      renderResult();
+    }
+
+    function renderTurn() {
+      stepHost.innerHTML = '';
+      stepHost.setAttribute('data-step', String(TOTAL));
+      var head = h('div');
+      head.appendChild(h('div', 'lsn-kicker', 'Step ' + TOTAL + ' · Your turn'));
+      head.appendChild(h('h2', 'lsn-title', 'Write your own query'));
+      stepHost.appendChild(head);
+      stepHost.appendChild(h('p', 'lsn-text', 'The tables from the Day ' + L.day + ' setup are loaded. Change the query below and run it. Mistakes are fine; the error message tells you what SQLite could not read.'));
+      var ideas = h('div', 'lsn-ideas');
+      ideas.setAttribute('role', 'group');
+      ideas.setAttribute('aria-label', 'Queries from today\'s lesson to load');
+      var ta;
+      L.turn.ideas.forEach(function (idea, ii) {
+        var b = h('button', 'chip lsn-idea', esc(idea.t));
+        b.type = 'button';
+        b.id = 'lesson-idea-' + (ii + 1);
+        b.addEventListener('click', function () { ta.value = idea.q; turnText = idea.q; ta.focus(); });
+        ideas.appendChild(b);
+      });
+      stepHost.appendChild(ideas);
+      var label = h('label', 'lsn-label', 'Your query');
+      label.setAttribute('for', 'lesson-editor');
+      stepHost.appendChild(label);
+      ta = h('textarea', 'lsn-editor');
+      ta.id = 'lesson-editor';
+      ta.spellcheck = false;
+      ta.value = turnText;
+      ta.setAttribute('autocapitalize', 'off');
+      ta.addEventListener('input', function () { turnText = ta.value; });
+      ta.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+      stepHost.appendChild(ta);
+      var row = h('div', 'lsn-runrow');
+      var runBtn = h('button', 'btn primary', 'Run query'); runBtn.type = 'button'; runBtn.id = 'lesson-turn-run';
+      var resetBtn = h('button', 'btn', 'Reset data'); resetBtn.type = 'button'; resetBtn.id = 'lesson-turn-reset';
+      row.appendChild(runBtn); row.appendChild(resetBtn); row.appendChild(h('span', 'lsn-hint', 'Ctrl+Enter also runs it.'));
+      stepHost.appendChild(row);
+      var out = h('div', 'lsn-result');
+      out.id = 'lesson-turn-result';
+      out.setAttribute('aria-live', 'polite');
+      stepHost.appendChild(out);
+      function run() {
+        out.innerHTML = '';
+        out.appendChild(h('p', 'lsn-label', 'Result'));
+        if (!db) {
+          out.appendChild(h('p', 'lsn-error', engine === 'loading' ? 'The SQL engine is still loading. Try again in a moment.' : 'The SQL engine did not load in this page, so your own queries cannot run here. The lesson steps still work with the expected rows.'));
+          return;
+        }
+        var r = runSql(ta.value);
+        if (r.error) { out.appendChild(h('p', 'lsn-error', 'SQLite could not run this query.\n' + esc(r.error))); return; }
+        if (!r.res || !r.res.values.length) { out.appendChild(h('p', 'lsn-note', 'The query ran. No rows came back.')); return; }
+        out.appendChild(resultTable(r.res.columns, r.res.values, {}));
+        var n = r.res.values.length;
+        out.appendChild(h('p', 'lsn-note', n + (n === 1 ? ' row' : ' rows') + (n > 200 ? ', first 200 shown.' : '.') + ' Changes you make to the tables stay until you reset the data.'));
+      }
+      runBtn.addEventListener('click', run);
+      resetBtn.addEventListener('click', function () {
+        if (SQL) { try { if (db) db.close(); } catch (e) {} db = freshDb(null); }
+        out.innerHTML = '';
+        out.appendChild(h('p', 'lsn-note', SQL ? 'The tables are back to the Day ' + L.day + ' setup rows.' : 'Nothing to reset: the SQL engine is not loaded.'));
+      });
+      if (db) run();
+    }
+
+    var start = 0;
+    var m = /^#step-(\d+)$/.exec(window.location.hash || '');
+    if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), TOTAL - 1);
+    renderDots();
+    go(start, { initial: true });
+    var ans = (params.get('answer') || '').toUpperCase();
+    if (ans && start < STEPS.length) {
+      var oi = -1;
+      STEPS[start].options.forEach(function (o, k) { if (o.letter === ans) oi = k; });
+      if (oi >= 0 && pickers[start]) pickers[start](oi);
+    }
+
+    if (typeof window.initSqlJs !== 'function') { engine = 'failed'; setStatus(); }
+    else {
+      setStatus();
+      try {
+        window.initSqlJs().then(function (S) {
+          SQL = S;
+          db = freshDb(null);
+          engine = 'ready';
+          setStatus();
+          if (current === STEPS.length) renderTurn();
+        }).catch(function () { engine = 'failed'; setStatus(); });
+      } catch (e) { engine = 'failed'; setStatus(); }
+    }
+  }
+
+  mount(document.getElementById('lesson'));
+})();
+</script>
+</body>
+</html>

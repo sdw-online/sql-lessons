@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 3: ORDER BY and LIMIT · Interactive SQL</title>
+<meta name="description" content="Sorting, the Top N pattern and pagination, on the 30-row online_orders table from the Day 3 setup. Predict where a row lands, then run it and watch the rows move.">
+<meta property="og:title" content="Day 3: ORDER BY and LIMIT · 30 Day SQL Challenge">
+<meta property="og:description" content="Sorting, the Top N pattern and pagination, on the 30-row online_orders table from the Day 3 setup. Predict where a row lands, then run it and watch the rows move.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f7; --surface: #ffffff; --surface-2: #e9edf1; --ink: #121820; --muted: #5b6774; --line: #d5dce3;
+  --accent: #0d7c86; --accent-soft: #d4eef0; --accent-ink: #ffffff; --good: #2b8a3e; --warn: #b7791f; --bad: #c92a2a;
+  --code-bg: #0f1720; --code-ink: #e3eaf2;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+    --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+    --code-bg: #090d12; --code-ink: #e3eaf2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --surface: #151b23; --surface-2: #1d2530; --ink: #e6edf3; --muted: #93a1b0; --line: #2a3441;
+  --accent: #3cc1cb; --accent-soft: #123a3e; --accent-ink: #061417; --good: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+  --code-bg: #090d12; --code-ink: #e3eaf2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding: 24px max(16px, env(safe-area-inset-right, 0px)) 56px max(16px, env(safe-area-inset-left, 0px));
+}
+.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 20px; min-width: 0; }
+header.top { display: grid; gap: 8px; }
+.toprow { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 6vw, 48px); line-height: 1.02; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 65ch; color: var(--muted); }
+.lede a { color: var(--accent); }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.btn { font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px; padding: 8px 14px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.ghost { background: transparent; font-size: 13px; padding: 6px 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; }
+footer.foot { color: var(--muted); font-size: 13px; max-width: 75ch; border-top: 1px solid var(--line); padding-top: 14px; }
+footer.foot a { color: var(--accent); }
+
+.d-lesson { display: grid; gap: 16px; min-width: 0; }
+.lsn-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.lsn-dots { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lsn-dot { width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 12px var(--font-mono); cursor: pointer; display: grid; place-items: center; padding: 0; }
+.lsn-dot.is-done { background: var(--accent-soft); color: var(--ink); border-color: transparent; }
+.lsn-dot[aria-current="step"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.lsn-dotline { width: 14px; height: 1px; background: var(--line); }
+.lsn-status { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.lsn-status.is-bad { color: var(--bad); }
+.lsn-step { display: grid; gap: 14px; min-width: 0; }
+.lsn-kicker { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lsn-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 3vw, 24px); line-height: 1.15; margin: 2px 0 0; }
+.lsn-text { margin: 0; max-width: 65ch; }
+.lsn-code { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius); padding: 10px 0; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; overflow-x: auto; margin: 0; min-width: 0; }
+.lsn-code .ln { display: block; padding: 1px 14px; white-space: pre; transition: background .25s, color .25s; }
+.lsn-code .ln.is-active { background: var(--accent-soft); color: var(--ink); }
+.lsn-code b { font-weight: 600; }
+.lsn-predict { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 14px; margin: 0; min-width: 0; background: var(--surface); }
+.lsn-predict legend { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
+.lsn-q { margin: 0; font-weight: 600; }
+.lsn-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+.lsn-opt { display: flex; gap: 10px; align-items: baseline; text-align: left; font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; min-width: 0; }
+.lsn-opt .lsn-letter { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--muted); }
+.lsn-opt:hover:not(:disabled) { border-color: var(--accent); }
+.lsn-opt.is-wrong { border-color: var(--bad); color: var(--muted); }
+.lsn-opt.is-wrong span:last-child { text-decoration: line-through; }
+.lsn-opt.is-right { border-color: var(--good); background: var(--accent-soft); color: var(--ink); font-weight: 600; animation: lsn-pop .4s ease-out; }
+.lsn-opt:disabled { cursor: default; }
+.lsn-fb { margin: 10px 0 0; max-width: 65ch; }
+.lsn-fb:empty { display: none; }
+.lsn-fb .tag-good { color: var(--good); font-weight: 600; }
+.lsn-fb .tag-bad { color: var(--bad); font-weight: 600; }
+.lsn-fbact { margin-top: 8px; }
+.lsn-runrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.lsn-hint { font-size: 13px; color: var(--muted); }
+.lsn-stages { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lsn-stages .arrow { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.lsn-sbtn { font-family: var(--font-mono); font-size: 12.5px; padding: 6px 10px; }
+.lsn-sbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lsn-scroll { overflow-x: auto; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.lsn-flowbox { max-height: 470px; overflow-y: auto; }
+.lsn-row { display: grid; gap: 0 10px; padding: 6px 12px; border-top: 1px solid var(--line); font-size: 13.5px; align-items: center; background: var(--surface); transition: opacity .35s, background-color .35s; position: relative; }
+.lsn-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lsn-row.is-head { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-top: 0; background: var(--surface-2); position: sticky; top: 0; z-index: 2; }
+.lsn-row .num { font-family: var(--font-mono); text-align: right; }
+.lsn-row .mono { font-family: var(--font-mono); font-size: 13px; }
+.lsn-row .note { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.lsn-row.is-keep .note { color: var(--good); }
+.lsn-row.is-out { opacity: .42; }
+.lsn-row.is-out .strike { text-decoration: line-through; }
+.lsn-row.is-out .note { color: var(--bad); }
+.lsn-row.is-cut { opacity: .42; }
+.lsn-row.is-cut .note { color: var(--warn); }
+.lsn-row.cut-start { border-top: 2px dashed var(--warn); }
+.lsn-flow.is-narrow .lsn-row { gap: 0 8px; padding: 6px 10px; font-size: 13px; }
+.lsn-flow.is-narrow .lsn-row .note { grid-column: 2 / -1; font-size: 11.5px; }
+.lsn-flow.is-narrow .lsn-row .note:empty { display: none; }
+.lsn-flow.is-narrow .lsn-row.is-head > span:last-child { display: none; }
+.lsn-views { display: grid; gap: 14px; min-width: 0; }
+.lsn-view { display: grid; gap: 6px; min-width: 0; }
+.lsn-views.is-multi .lsn-flowbox { max-height: 300px; }
+.lsn-row.g-alt { background: var(--surface-2); }
+.lsn-row.g-start { border-top: 2px solid var(--muted); }
+.lsn-row > span.is-changed { color: var(--accent); font-weight: 600; }
+.lsn-row[hidden] { display: none; }
+.lsn-modified { margin: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+.lsn-caption { margin: 0; color: var(--muted); font-size: 14px; min-height: 1.5em; }
+.lsn-result { display: grid; gap: 8px; min-width: 0; }
+.lsn-result:empty { display: none; }
+.lsn-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.lsn-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.lsn-table th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); text-align: left; font-weight: 600; padding: 7px 12px; background: var(--surface-2); white-space: nowrap; }
+.lsn-table td { padding: 7px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
+.lsn-table td.n { font-family: var(--font-mono); text-align: right; }
+.lsn-table th.n { text-align: right; }
+.lsn-note { margin: 0; font-size: 13px; color: var(--muted); }
+.lsn-error { margin: 0; color: var(--bad); font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; padding: 10px 12px; border: 1px solid var(--bad); border-radius: var(--radius); background: var(--surface); }
+.lsn-editor { width: 100%; min-height: 150px; resize: vertical; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: block; }
+.lsn-ideas { display: flex; flex-wrap: wrap; gap: 6px; }
+.lsn-idea { cursor: pointer; }
+.lsn-nav { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.lsn-nav .pos { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.d-lesson button:focus-visible, .d-lesson textarea:focus-visible, .lsn-scroll:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes lsn-pop { 0% { transform: scale(.96); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@media (max-width: 560px) {
+  .stage { padding: 12px; }
+  .lsn-opts { grid-template-columns: 1fr 1fr; }
+  .lsn-code { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="toprow">
+      <div class="eyebrow">30 Day SQL Challenge · Day 03 · interactive</div>
+      <button type="button" class="btn ghost" id="theme-toggle" aria-label="Switch between light and dark theme">Theme</button>
+    </div>
+    <h1>ORDER BY and LIMIT</h1>
+    <p class="lede">Sorting, the Top N pattern and pagination, on the 30-row online_orders table from the Day 3 setup. Predict where a row lands, then run it and watch the rows move. <a href="https://www.youtube.com/watch?v=s86nI9dPZqY" target="_blank" rel="noopener">Watch the Day 3 video</a>.</p>
+  </header>
+  <main class="stage"><div id="lesson" class="d-lesson" data-day="3"></div></main>
+  <footer class="foot">The tables are the ones from the Day 3 setup script, running in SQLite inside your browser. The course itself uses PostgreSQL, so a few things display differently: SQLite shows TRUE/FALSE as 1/0 (shown here as t/f, the way psql prints them), drops trailing zeros (shown here with two decimals where the column is NUMERIC), and words its error messages differently. Every result on this page was checked against the documented output when the page was built. <a href="https://github.com/sdw-online/30-Day-SQL-Challenge" target="_blank" rel="noopener">Course repo</a>.</footer>
+</div>
+<script>window.LESSON = {"day":3,"title":"ORDER BY and LIMIT","display":{"is_member":"bool","order_amount":{"decimals":2}},"tables":{"online_orders":{"idColumn":"order_id","ids":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"rows":{"1":{"order_id":1,"customer_name":"Amara Osei","email":"amara.osei@gmail.com","product_name":"Wireless Headphones","category":"Electronics","order_amount":89.99,"order_date":"2025-01-05","region":"London","is_member":1},"2":{"order_id":2,"customer_name":"Callum Fraser","email":"callum.fraser@outlook.com","product_name":"Running Shoes","category":"Sportswear","order_amount":124.5,"order_date":"2025-01-08","region":"Scotland","is_member":0},"3":{"order_id":3,"customer_name":"Priya Sharma","email":"priya.sharma@gmail.com","product_name":"Yoga Mat","category":"Sportswear","order_amount":34.99,"order_date":"2025-01-10","region":"London","is_member":1},"4":{"order_id":4,"customer_name":"Finn McCarthy","email":"finn.mccarthy@yahoo.co.uk","product_name":"Coffee Machine","category":"Kitchen","order_amount":219,"order_date":"2025-01-12","region":"Wales","is_member":0},"5":{"order_id":5,"customer_name":"Isla Nguyen","email":"isla.nguyen@hotmail.com","product_name":"Desk Lamp","category":"Home Office","order_amount":47.5,"order_date":"2025-01-14","region":"North West","is_member":1},"6":{"order_id":6,"customer_name":"Ravi Kapoor","email":"ravi.kapoor@gmail.com","product_name":"Bluetooth Speaker","category":"Electronics","order_amount":65,"order_date":"2025-01-15","region":"West Midlands","is_member":0},"7":{"order_id":7,"customer_name":"Sienna Clarke","email":"sienna.clarke@shopstream.com","product_name":"Standing Desk","category":"Home Office","order_amount":349.99,"order_date":"2025-01-18","region":"London","is_member":1},"8":{"order_id":8,"customer_name":"Euan Campbell","email":"euan.campbell@gmail.com","product_name":"Trail Boots","category":"Sportswear","order_amount":159,"order_date":"2025-01-20","region":"Scotland","is_member":1},"9":{"order_id":9,"customer_name":"Nia Reeves","email":"nia.reeves@outlook.com","product_name":"Air Fryer","category":"Kitchen","order_amount":129.99,"order_date":"2025-01-22","region":"Wales","is_member":0},"10":{"order_id":10,"customer_name":"Mateo Silva","email":"mateo.silva@gmail.com","product_name":"Laptop Stand","category":"Home Office","order_amount":59.99,"order_date":"2025-01-25","region":"South East","is_member":1},"11":{"order_id":11,"customer_name":"Freya Anderson","email":"freya.anderson@yahoo.co.uk","product_name":"Protein Powder","category":"Sportswear","order_amount":42,"order_date":"2025-01-28","region":"North East","is_member":0},"12":{"order_id":12,"customer_name":"Arjun Patel","email":"arjun.patel@shopstream.com","product_name":"Monitor 27 inch","category":"Electronics","order_amount":329,"order_date":"2025-02-01","region":"London","is_member":1},"13":{"order_id":13,"customer_name":"Yuki Tanaka","email":"yuki.tanaka@gmail.com","product_name":"Blender Pro","category":"Kitchen","order_amount":89,"order_date":"2025-02-03","region":"East Midlands","is_member":0},"14":{"order_id":14,"customer_name":"Safiya Hassan","email":"safiya.hassan@outlook.com","product_name":"Wireless Mouse","category":"Electronics","order_amount":29.99,"order_date":"2025-02-05","region":"North West","is_member":1},"15":{"order_id":15,"customer_name":"Quinn Byrne","email":"quinn.byrne@hotmail.com","product_name":"Resistance Bands","category":"Sportswear","order_amount":18.5,"order_date":"2025-02-07","region":"Wales","is_member":0},"16":{"order_id":16,"customer_name":"Wei Zhang","email":"wei.zhang@gmail.com","product_name":"Mechanical Keyboard","category":"Electronics","order_amount":149,"order_date":"2025-02-10","region":"London","is_member":1},"17":{"order_id":17,"customer_name":"Idris Okafor","email":"idris.okafor@yahoo.co.uk","product_name":"Slow Cooker","category":"Kitchen","order_amount":74.99,"order_date":"2025-02-12","region":"West Midlands","is_member":0},"18":{"order_id":18,"customer_name":"Leila Hussain","email":"leila.hussain@shopstream.com","product_name":"Ergonomic Chair","category":"Home Office","order_amount":499,"order_date":"2025-02-14","region":"South East","is_member":1},"19":{"order_id":19,"customer_name":"Sage Kowalski","email":"sage.kowalski@gmail.com","product_name":"Dumbbells Set","category":"Sportswear","order_amount":95,"order_date":"2025-02-16","region":"Scotland","is_member":1},"20":{"order_id":20,"customer_name":"Kwame Mensah","email":"kwame.mensah@outlook.com","product_name":"Webcam HD","category":"Electronics","order_amount":79.99,"order_date":"2025-02-18","region":"North East","is_member":0},"21":{"order_id":21,"customer_name":"Mei Lin","email":"mei.lin@gmail.com","product_name":"Toaster Oven","category":"Kitchen","order_amount":64.5,"order_date":"2025-02-20","region":"East Midlands","is_member":1},"22":{"order_id":22,"customer_name":"Jordan Ellis","email":"jordan.ellis@hotmail.com","product_name":"Laptop Backpack","category":"Home Office","order_amount":55,"order_date":"2025-02-22","region":"London","is_member":0},"23":{"order_id":23,"customer_name":"Zara Ibrahim","email":"zara.ibrahim@gmail.com","product_name":"Smart Watch","category":"Electronics","order_amount":199.99,"order_date":"2025-02-25","region":"North West","is_member":1},"24":{"order_id":24,"customer_name":"River Chen","email":"river.chen@shopstream.com","product_name":"Kettlebell 16kg","category":"Sportswear","order_amount":45,"order_date":"2025-02-28","region":"Wales","is_member":0},"25":{"order_id":25,"customer_name":"Phoenix Taylor","email":"phoenix.taylor@yahoo.co.uk","product_name":"Electric Kettle","category":"Kitchen","order_amount":39.99,"order_date":"2025-03-02","region":"South East","is_member":1},"26":{"order_id":26,"customer_name":"Aisha Mohammed","email":"aisha.mohammed@gmail.com","product_name":"USB-C Hub","category":"Electronics","order_amount":44.99,"order_date":"2025-03-05","region":"West Midlands","is_member":0},"27":{"order_id":27,"customer_name":"Lucas Fernandez","email":"lucas.fernandez@outlook.com","product_name":"Foam Roller","category":"Sportswear","order_amount":24.99,"order_date":"2025-03-08","region":"Scotland","is_member":1},"28":{"order_id":28,"customer_name":"Nina Volkov","email":"nina.volkov@hotmail.com","product_name":"Knife Set","category":"Kitchen","order_amount":189,"order_date":"2025-03-10","region":"London","is_member":0},"29":{"order_id":29,"customer_name":"Jamal Williams","email":"jamal.williams@gmail.com","product_name":"Monitor Arm","category":"Home Office","order_amount":69.99,"order_date":"2025-03-12","region":"North East","is_member":1},"30":{"order_id":30,"customer_name":"Freya Mitchell","email":"freya.mitchell@shopstream.com","product_name":"Fitness Tracker","category":"Electronics","order_amount":149.99,"order_date":"2025-03-15","region":"East Midlands","is_member":0}}}},"seedSql":"DROP TABLE IF EXISTS online_orders;\nCREATE TABLE online_orders (\n    order_id        INTEGER PRIMARY KEY,\n    customer_name   VARCHAR(100)   NOT NULL,\n    email           VARCHAR(150)   NOT NULL,\n    product_name    VARCHAR(100)   NOT NULL,\n    category        VARCHAR(50)    NOT NULL,\n    order_amount    NUMERIC(10, 2) NOT NULL,\n    order_date      DATE           NOT NULL,\n    region          VARCHAR(50)    NOT NULL,\n    is_member       BOOLEAN        NOT NULL DEFAULT FALSE\n);\nINSERT INTO online_orders (customer_name, email, product_name, category, order_amount, order_date, region, is_member)\nVALUES\n    ('Amara Osei',      'amara.osei@gmail.com',        'Wireless Headphones',     'Electronics',    89.99,  '2025-01-05', 'London',          TRUE),\n    ('Callum Fraser',   'callum.fraser@outlook.com',   'Running Shoes',           'Sportswear',    124.50,  '2025-01-08', 'Scotland',        FALSE),\n    ('Priya Sharma',    'priya.sharma@gmail.com',       'Yoga Mat',               'Sportswear',     34.99,  '2025-01-10', 'London',          TRUE),\n    ('Finn McCarthy',   'finn.mccarthy@yahoo.co.uk',   'Coffee Machine',          'Kitchen',       219.00,  '2025-01-12', 'Wales',           FALSE),\n    ('Isla Nguyen',     'isla.nguyen@hotmail.com',      'Desk Lamp',              'Home Office',    47.50,  '2025-01-14', 'North West',      TRUE),\n    ('Ravi Kapoor',     'ravi.kapoor@gmail.com',        'Bluetooth Speaker',      'Electronics',    65.00,  '2025-01-15', 'West Midlands',   FALSE),\n    ('Sienna Clarke',   'sienna.clarke@shopstream.com', 'Standing Desk',          'Home Office',   349.99,  '2025-01-18', 'London',          TRUE),\n    ('Euan Campbell',   'euan.campbell@gmail.com',      'Trail Boots',            'Sportswear',    159.00,  '2025-01-20', 'Scotland',        TRUE),\n    ('Nia Reeves',      'nia.reeves@outlook.com',       'Air Fryer',              'Kitchen',       129.99,  '2025-01-22', 'Wales',           FALSE),\n    ('Mateo Silva',     'mateo.silva@gmail.com',        'Laptop Stand',           'Home Office',    59.99,  '2025-01-25', 'South East',      TRUE),\n    ('Freya Anderson',  'freya.anderson@yahoo.co.uk',   'Protein Powder',         'Sportswear',     42.00,  '2025-01-28', 'North East',      FALSE),\n    ('Arjun Patel',     'arjun.patel@shopstream.com',   'Monitor 27 inch',        'Electronics',   329.00,  '2025-02-01', 'London',          TRUE),\n    ('Yuki Tanaka',     'yuki.tanaka@gmail.com',        'Blender Pro',            'Kitchen',        89.00,  '2025-02-03', 'East Midlands',   FALSE),\n    ('Safiya Hassan',   'safiya.hassan@outlook.com',    'Wireless Mouse',         'Electronics',    29.99,  '2025-02-05', 'North West',      TRUE),\n    ('Quinn Byrne',     'quinn.byrne@hotmail.com',      'Resistance Bands',       'Sportswear',     18.50,  '2025-02-07', 'Wales',           FALSE),\n    ('Wei Zhang',       'wei.zhang@gmail.com',          'Mechanical Keyboard',    'Electronics',   149.00,  '2025-02-10', 'London',          TRUE),\n    ('Idris Okafor',    'idris.okafor@yahoo.co.uk',    'Slow Cooker',            'Kitchen',        74.99,  '2025-02-12', 'West Midlands',   FALSE),\n    ('Leila Hussain',   'leila.hussain@shopstream.com', 'Ergonomic Chair',        'Home Office',   499.00,  '2025-02-14', 'South East',      TRUE),\n    ('Sage Kowalski',   'sage.kowalski@gmail.com',      'Dumbbells Set',          'Sportswear',     95.00,  '2025-02-16', 'Scotland',        TRUE),\n    ('Kwame Mensah',    'kwame.mensah@outlook.com',     'Webcam HD',              'Electronics',    79.99,  '2025-02-18', 'North East',      FALSE),\n    ('Mei Lin',         'mei.lin@gmail.com',            'Toaster Oven',           'Kitchen',        64.50,  '2025-02-20', 'East Midlands',   TRUE),\n    ('Jordan Ellis',    'jordan.ellis@hotmail.com',     'Laptop Backpack',        'Home Office',    55.00,  '2025-02-22', 'London',          FALSE),\n    ('Zara Ibrahim',    'zara.ibrahim@gmail.com',       'Smart Watch',            'Electronics',   199.99,  '2025-02-25', 'North West',      TRUE),\n    ('River Chen',      'river.chen@shopstream.com',    'Kettlebell 16kg',        'Sportswear',     45.00,  '2025-02-28', 'Wales',           FALSE),\n    ('Phoenix Taylor',  'phoenix.taylor@yahoo.co.uk',   'Electric Kettle',        'Kitchen',        39.99,  '2025-03-02', 'South East',      TRUE),\n    ('Aisha Mohammed',  'aisha.mohammed@gmail.com',     'USB-C Hub',              'Electronics',    44.99,  '2025-03-05', 'West Midlands',   FALSE),\n    ('Lucas Fernandez', 'lucas.fernandez@outlook.com',  'Foam Roller',            'Sportswear',     24.99,  '2025-03-08', 'Scotland',        TRUE),\n    ('Nina Volkov',     'nina.volkov@hotmail.com',      'Knife Set',              'Kitchen',       189.00,  '2025-03-10', 'London',          FALSE),\n    ('Jamal Williams',  'jamal.williams@gmail.com',     'Monitor Arm',            'Home Office',    69.99,  '2025-03-12', 'North East',      TRUE),\n    ('Freya Mitchell',  'freya.mitchell@shopstream.com','Fitness Tracker',         'Electronics',   149.99,  '2025-03-15', 'East Midlands',   FALSE);","steps":[{"kicker":"Step 1 · ORDER BY DESC","title":"DESC puts the biggest first","concept":["ORDER BY sorts your results. On its own it sorts ascending: lowest to highest.","Add DESC and it sorts descending: highest to lowest for numbers, Z to A for text, newest to oldest for dates."],"lines":["SELECT","    customer_name,","    product_name,","    order_amount","FROM online_orders","ORDER BY order_amount DESC;"],"sql":"SELECT\n    customer_name,\n    product_name,\n    order_amount\nFROM online_orders\nORDER BY order_amount DESC;","kind":"select","before":null,"verify":null,"display":{},"question":"Which product is at the top of the result?","right":"The Ergonomic Chair at $499 sits right at the top, then the Standing Desk at $349.99 and the Monitor 27 inch at $329.","dialectNote":"Amounts are shown with two decimals, as PostgreSQL prints NUMERIC(10, 2).","views":[{"table":"online_orders","columns":["customer_name","product_name","order_amount"],"label":null}],"options":[{"letter":"A","text":"Resistance Bands","ok":false,"why":"At $18.50 that is the smallest order. It would top an ascending sort, the default. DESC flips it."},{"letter":"B","text":"Wireless Headphones","ok":false,"why":"That is the first row stored in the table. ORDER BY ignores the order rows were stored in."},{"letter":"C","text":"Standing Desk","ok":false,"why":"Close. At $349.99 it is second; the Ergonomic Chair at $499 beats it."},{"letter":"D","text":"Ergonomic Chair","ok":true,"why":""}],"stages":[{"label":"FROM","lines":[4],"caption":"FROM online_orders: all 30 orders, in the order they were stored.","views":{"online_orders":{"order":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"ORDER BY","lines":[5],"caption":"ORDER BY order_amount DESC: the biggest orders rise to the top.","views":{"online_orders":{"order":[18,7,12,4,23,28,8,30,16,9,2,19,1,13,20,17,29,6,21,10,22,5,24,26,11,25,3,14,27,15],"out":{},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":1,"20":1,"21":1,"22":1,"23":1,"24":1,"25":1,"26":1,"27":1,"28":1,"29":1,"30":1},"notes":{"1":"#13 · 89.99","2":"#11 · 124.50","3":"#27 · 34.99","4":"#4 · 219.00","5":"#22 · 47.50","6":"#18 · 65.00","7":"#2 · 349.99","8":"#7 · 159.00","9":"#10 · 129.99","10":"#20 · 59.99","11":"#25 · 42.00","12":"#3 · 329.00","13":"#14 · 89.00","14":"#28 · 29.99","15":"#30 · 18.50","16":"#9 · 149.00","17":"#16 · 74.99","18":"#1 · 499.00","19":"#12 · 95.00","20":"#15 · 79.99","21":"#19 · 64.50","22":"#21 · 55.00","23":"#5 · 199.99","24":"#23 · 45.00","25":"#26 · 39.99","26":"#24 · 44.99","27":"#29 · 24.99","28":"#6 · 189.00","29":"#17 · 69.99","30":"#8 · 149.99"},"cutStart":null,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["customer_name","product_name","order_amount"],"values":[["Leila Hussain","Ergonomic Chair",499],["Sienna Clarke","Standing Desk",349.99],["Arjun Patel","Monitor 27 inch",329],["Finn McCarthy","Coffee Machine",219],["Zara Ibrahim","Smart Watch",199.99],["Nina Volkov","Knife Set",189],["Euan Campbell","Trail Boots",159],["Freya Mitchell","Fitness Tracker",149.99],["Wei Zhang","Mechanical Keyboard",149],["Nia Reeves","Air Fryer",129.99],["Callum Fraser","Running Shoes",124.5],["Sage Kowalski","Dumbbells Set",95],["Amara Osei","Wireless Headphones",89.99],["Yuki Tanaka","Blender Pro",89],["Kwame Mensah","Webcam HD",79.99],["Idris Okafor","Slow Cooker",74.99],["Jamal Williams","Monitor Arm",69.99],["Ravi Kapoor","Bluetooth Speaker",65],["Mei Lin","Toaster Oven",64.5],["Mateo Silva","Laptop Stand",59.99],["Jordan Ellis","Laptop Backpack",55],["Isla Nguyen","Desk Lamp",47.5],["River Chen","Kettlebell 16kg",45],["Aisha Mohammed","USB-C Hub",44.99],["Freya Anderson","Protein Powder",42],["Phoenix Taylor","Electric Kettle",39.99],["Priya Sharma","Yoga Mat",34.99],["Safiya Hassan","Wireless Mouse",29.99],["Lucas Fernandez","Foam Roller",24.99],["Quinn Byrne","Resistance Bands",18.5]],"modified":null,"error":null},"sourceRef":"03-teleprompter.md, Descending Order"},{"kicker":"Step 2 · Top N","title":"ORDER BY first, then LIMIT","concept":["ORDER BY plus LIMIT is the Top N pattern. This sorts all 30 orders by amount, highest first, then returns only the first 5 rows.","The ORDER BY happens before the LIMIT, so you are guaranteed the actual top 5, not just any 5 rows."],"lines":["SELECT","    customer_name,","    product_name,","    order_amount","FROM online_orders","ORDER BY order_amount DESC","LIMIT 5;"],"sql":"SELECT\n    customer_name,\n    product_name,\n    order_amount\nFROM online_orders\nORDER BY order_amount DESC\nLIMIT 5;","kind":"select","before":null,"verify":null,"display":{},"question":"Which product is fifth?","right":"Zara Ibrahim's Smart Watch at $199.99 is fifth. The Knife Set at $189 just misses out.","dialectNote":"Amounts are shown with two decimals, as PostgreSQL prints NUMERIC(10, 2).","views":[{"table":"online_orders","columns":["customer_name","product_name","order_amount"],"label":null}],"options":[{"letter":"A","text":"Coffee Machine","ok":false,"why":"The Coffee Machine is fourth, at $219."},{"letter":"B","text":"Smart Watch","ok":true,"why":""},{"letter":"C","text":"Knife Set","ok":false,"why":"At $189 the Knife Set is sixth. LIMIT 5 cuts it."},{"letter":"D","text":"Desk Lamp","ok":false,"why":"The Desk Lamp is the fifth row as stored. ORDER BY runs before LIMIT, so stored order never decides the top 5."}],"stages":[{"label":"FROM","lines":[4],"caption":"FROM online_orders: 30 orders in stored order.","views":{"online_orders":{"order":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"ORDER BY","lines":[5],"caption":"ORDER BY runs first: all 30 rows sorted, biggest first.","views":{"online_orders":{"order":[18,7,12,4,23,28,8,30,16,9,2,19,1,13,20,17,29,6,21,10,22,5,24,26,11,25,3,14,27,15],"out":{},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":1,"20":1,"21":1,"22":1,"23":1,"24":1,"25":1,"26":1,"27":1,"28":1,"29":1,"30":1},"notes":{"1":"#13 · 89.99","2":"#11 · 124.50","3":"#27 · 34.99","4":"#4 · 219.00","5":"#22 · 47.50","6":"#18 · 65.00","7":"#2 · 349.99","8":"#7 · 159.00","9":"#10 · 129.99","10":"#20 · 59.99","11":"#25 · 42.00","12":"#3 · 329.00","13":"#14 · 89.00","14":"#28 · 29.99","15":"#30 · 18.50","16":"#9 · 149.00","17":"#16 · 74.99","18":"#1 · 499.00","19":"#12 · 95.00","20":"#15 · 79.99","21":"#19 · 64.50","22":"#21 · 55.00","23":"#5 · 199.99","24":"#23 · 45.00","25":"#26 · 39.99","26":"#24 · 44.99","27":"#29 · 24.99","28":"#6 · 189.00","29":"#17 · 69.99","30":"#8 · 149.99"},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"LIMIT 5","lines":[6],"caption":"LIMIT 5 keeps the first five sorted rows and cuts the other 25.","views":{"online_orders":{"order":[18,7,12,4,23,28,8,30,16,9,2,19,1,13,20,17,29,6,21,10,22,5,24,26,11,25,3,14,27,15],"out":{},"cut":{"1":1,"2":1,"3":1,"5":1,"6":1,"8":1,"9":1,"10":1,"11":1,"13":1,"14":1,"15":1,"16":1,"17":1,"19":1,"20":1,"21":1,"22":1,"24":1,"25":1,"26":1,"27":1,"28":1,"29":1,"30":1},"keep":{"4":1,"7":1,"12":1,"18":1,"23":1},"notes":{"1":"#13 cut by LIMIT 5","2":"#11 cut by LIMIT 5","3":"#27 cut by LIMIT 5","4":"#4 kept","5":"#22 cut by LIMIT 5","6":"#18 cut by LIMIT 5","7":"#2 kept","8":"#7 cut by LIMIT 5","9":"#10 cut by LIMIT 5","10":"#20 cut by LIMIT 5","11":"#25 cut by LIMIT 5","12":"#3 kept","13":"#14 cut by LIMIT 5","14":"#28 cut by LIMIT 5","15":"#30 cut by LIMIT 5","16":"#9 cut by LIMIT 5","17":"#16 cut by LIMIT 5","18":"#1 kept","19":"#12 cut by LIMIT 5","20":"#15 cut by LIMIT 5","21":"#19 cut by LIMIT 5","22":"#21 cut by LIMIT 5","23":"#5 kept","24":"#23 cut by LIMIT 5","25":"#26 cut by LIMIT 5","26":"#24 cut by LIMIT 5","27":"#29 cut by LIMIT 5","28":"#6 cut by LIMIT 5","29":"#17 cut by LIMIT 5","30":"#8 cut by LIMIT 5"},"cutStart":28,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["customer_name","product_name","order_amount"],"values":[["Leila Hussain","Ergonomic Chair",499],["Sienna Clarke","Standing Desk",349.99],["Arjun Patel","Monitor 27 inch",329],["Finn McCarthy","Coffee Machine",219],["Zara Ibrahim","Smart Watch",199.99]],"modified":null,"error":null},"sourceRef":"03-teleprompter.md, 2. LIMIT"},{"kicker":"Step 3 · OFFSET","title":"OFFSET skips, LIMIT takes the next page","concept":["OFFSET 5 skips the first 5 rows. Then LIMIT 5 returns the next 5, so you get rows 6 through 10.","This is pagination, the same mechanism every website uses to show results across pages."],"lines":["SELECT","    customer_name,","    product_name,","    order_amount","FROM online_orders","ORDER BY order_amount DESC","LIMIT 5 OFFSET 5;"],"sql":"SELECT\n    customer_name,\n    product_name,\n    order_amount\nFROM online_orders\nORDER BY order_amount DESC\nLIMIT 5 OFFSET 5;","kind":"select","before":null,"verify":null,"display":{},"question":"Which product comes back first?","right":"Rows 6 to 10 start with the Knife Set at $189, then Trail Boots, Fitness Tracker, Mechanical Keyboard and Air Fryer.","dialectNote":"Amounts are shown with two decimals, as PostgreSQL prints NUMERIC(10, 2).","views":[{"table":"online_orders","columns":["customer_name","product_name","order_amount"],"label":null}],"options":[{"letter":"A","text":"Ergonomic Chair","ok":false,"why":"The Ergonomic Chair is number 1 overall, so OFFSET 5 skips it."},{"letter":"B","text":"Smart Watch","ok":false,"why":"The Smart Watch is number 5, the last row OFFSET 5 skips."},{"letter":"C","text":"Knife Set","ok":true,"why":""},{"letter":"D","text":"Trail Boots","ok":false,"why":"Trail Boots is number 7, the second row on this page."}],"stages":[{"label":"FROM","lines":[4],"caption":"FROM online_orders: 30 orders in stored order.","views":{"online_orders":{"order":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"out":{},"cut":{},"keep":{},"notes":{},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"ORDER BY","lines":[5],"caption":"ORDER BY sorts all 30, biggest first.","views":{"online_orders":{"order":[18,7,12,4,23,28,8,30,16,9,2,19,1,13,20,17,29,6,21,10,22,5,24,26,11,25,3,14,27,15],"out":{},"cut":{},"keep":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"8":1,"9":1,"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":1,"20":1,"21":1,"22":1,"23":1,"24":1,"25":1,"26":1,"27":1,"28":1,"29":1,"30":1},"notes":{"1":"#13 · 89.99","2":"#11 · 124.50","3":"#27 · 34.99","4":"#4 · 219.00","5":"#22 · 47.50","6":"#18 · 65.00","7":"#2 · 349.99","8":"#7 · 159.00","9":"#10 · 129.99","10":"#20 · 59.99","11":"#25 · 42.00","12":"#3 · 329.00","13":"#14 · 89.00","14":"#28 · 29.99","15":"#30 · 18.50","16":"#9 · 149.00","17":"#16 · 74.99","18":"#1 · 499.00","19":"#12 · 95.00","20":"#15 · 79.99","21":"#19 · 64.50","22":"#21 · 55.00","23":"#5 · 199.99","24":"#23 · 45.00","25":"#26 · 39.99","26":"#24 · 44.99","27":"#29 · 24.99","28":"#6 · 189.00","29":"#17 · 69.99","30":"#8 · 149.99"},"cutStart":null,"vals":{},"gone":{},"group":null}}},{"label":"OFFSET 5 · LIMIT 5","lines":[6],"caption":"OFFSET 5 skips the top five. LIMIT 5 keeps the next five, rows 6 to 10.","views":{"online_orders":{"order":[18,7,12,4,23,28,8,30,16,9,2,19,1,13,20,17,29,6,21,10,22,5,24,26,11,25,3,14,27,15],"out":{},"cut":{"1":1,"2":1,"3":1,"4":1,"5":1,"6":1,"7":1,"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"17":1,"18":1,"19":1,"20":1,"21":1,"22":1,"23":1,"24":1,"25":1,"26":1,"27":1,"29":1},"keep":{"8":1,"9":1,"16":1,"28":1,"30":1},"notes":{"1":"#13 cut by LIMIT 5","2":"#11 cut by LIMIT 5","3":"#27 cut by LIMIT 5","4":"#4 skipped by OFFSET 5","5":"#22 cut by LIMIT 5","6":"#18 cut by LIMIT 5","7":"#2 skipped by OFFSET 5","8":"#7 kept","9":"#10 kept","10":"#20 cut by LIMIT 5","11":"#25 cut by LIMIT 5","12":"#3 skipped by OFFSET 5","13":"#14 cut by LIMIT 5","14":"#28 cut by LIMIT 5","15":"#30 cut by LIMIT 5","16":"#9 kept","17":"#16 cut by LIMIT 5","18":"#1 skipped by OFFSET 5","19":"#12 cut by LIMIT 5","20":"#15 cut by LIMIT 5","21":"#19 cut by LIMIT 5","22":"#21 cut by LIMIT 5","23":"#5 skipped by OFFSET 5","24":"#23 cut by LIMIT 5","25":"#26 cut by LIMIT 5","26":"#24 cut by LIMIT 5","27":"#29 cut by LIMIT 5","28":"#6 kept","29":"#17 cut by LIMIT 5","30":"#8 kept"},"cutStart":2,"vals":{},"gone":{},"group":null}}}],"expected":{"columns":["customer_name","product_name","order_amount"],"values":[["Nina Volkov","Knife Set",189],["Euan Campbell","Trail Boots",159],["Freya Mitchell","Fitness Tracker",149.99],["Wei Zhang","Mechanical Keyboard",149],["Nia Reeves","Air Fryer",129.99]],"modified":null,"error":null},"sourceRef":"03-teleprompter.md, OFFSET - Pagination"}],"turn":{"default":"SELECT\n    region,\n    customer_name,\n    product_name,\n    order_amount\nFROM online_orders\nORDER BY region ASC, order_amount DESC;","ideas":[{"t":"Unique regions","q":"SELECT DISTINCT region\nFROM online_orders\nORDER BY region;"},{"t":"Region and category pairs","q":"SELECT DISTINCT region, category\nFROM online_orders\nORDER BY region, category;"},{"t":"Count unique values","q":"SELECT\n    COUNT(DISTINCT region) AS unique_regions,\n    COUNT(DISTINCT category) AS unique_categories\nFROM online_orders;"}]},"turnTable":"online_orders"};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-asm.js" integrity="sha384-lJQGJ26r89i4hDPcMDnFg2BHiI4bG8U6LYvE+KO1QalxaV6JPstYbnO+7gKh0RwD" crossorigin="anonymous"></script>
+<script>
+/* Interactive lesson runtime. Generalised from the Feature Lab prototype (demos/lesson.js, 15 Oct 2026).
+ * Reads window.LESSON, which build-lessons.js bakes into each day-NN.html. Every stage state (for every table
+ * a step shows) and every expected result in LESSON was computed at build time by the same sql.js build this
+ * page loads and asserted against the day's documented output, so the step-through never depends on the engine.
+ * SELECT steps run on the page's database; UPDATE/DELETE steps, and steps with a prelude, run on a fresh copy
+ * every time, so Run is repeatable.
+ * Deep links: ?answer=B preselects a predict answer (on the step named by #step-N, else step 1);
+ * #step-N opens step N; ?theme=dark|light forces a theme. */
+(function () {
+  'use strict';
+  var L = window.LESSON;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  var KW = /\b(SELECT|DISTINCT|FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|OFFSET|AS|DESC|ASC|IN|AND|OR|NOT|COUNT|SUM|AVG|MIN|MAX|ROUND|TRUE|FALSE|BETWEEN|LIKE|JOIN|ON|UPDATE|SET|DELETE|INSERT INTO|VALUES|NULL|IS)\b/g;
+  function hl(line) { return esc(line).replace(KW, '<b>$1</b>'); }
+  function h(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function reduceMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+  function fmtWith(display, col, v) {
+    if (v === null || v === undefined) return null;
+    var d = display[col] || L.display[col];
+    if (d === 'bool') return v === 1 || v === true ? 't' : v === 0 || v === false ? 'f' : String(v);
+    if (d && typeof d.decimals === 'number' && typeof v === 'number') return v.toFixed(d.decimals);
+    return String(v);
+  }
+
+  var params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { params = { get: function () { return null; } }; }
+  var themeParam = params.get('theme');
+  if (themeParam === 'dark' || themeParam === 'light') document.documentElement.setAttribute('data-theme', themeParam);
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme');
+      if (!cur) cur = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  function resultTable(columns, values, display, label) {
+    var numCols = columns.map(function (c, ci) {
+      return values.length > 0 && values.every(function (row) { return typeof row[ci] === 'number' || row[ci] === null; });
+    });
+    var html = '<table class="lsn-table"><thead><tr>' + columns.map(function (c, ci) {
+      return '<th scope="col"' + (numCols[ci] ? ' class="n"' : '') + '>' + esc(c) + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+    values.slice(0, 200).forEach(function (row) {
+      html += '<tr>' + row.map(function (v, ci) {
+        var f = fmtWith(display || {}, columns[ci], v);
+        return '<td' + (numCols[ci] ? ' class="n"' : '') + '>' + (f === null ? '<span class="lsn-note">NULL</span>' : esc(f)) + '</td>';
+      }).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    var wrap = h('div', 'lsn-scroll', html);
+    wrap.tabIndex = 0;
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', label || 'Query result');
+    return wrap;
+  }
+
+  function mount(el) {
+    var SQL = null, db = null, engine = 'loading';
+    var STEPS = L.steps;
+    var TOTAL = STEPS.length + 1;
+    var current = 0, timers = [];
+    var turnText = L.turn.default;
+    var progress = STEPS.map(function () { return { wrong: {}, solved: false, revealed: false, ran: false, stage: 0, result: null, fb: '' }; });
+
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+    var top = h('div', 'lsn-top');
+    var dots = h('div', 'lsn-dots');
+    dots.setAttribute('role', 'group');
+    dots.setAttribute('aria-label', 'Lesson progress');
+    var status = h('div', 'lsn-status', 'SQL engine loading…');
+    status.id = 'lesson-engine';
+    status.setAttribute('aria-live', 'polite');
+    top.appendChild(dots); top.appendChild(status);
+
+    var stepHost = h('div', 'lsn-step');
+    var nav = h('div', 'lsn-nav');
+    var backBtn = h('button', 'btn', 'Back'); backBtn.type = 'button'; backBtn.id = 'lesson-back';
+    var pos = h('span', 'pos');
+    var nextBtn = h('button', 'btn primary', 'Next'); nextBtn.type = 'button'; nextBtn.id = 'lesson-next';
+    nav.appendChild(backBtn); nav.appendChild(pos); nav.appendChild(nextBtn);
+    backBtn.addEventListener('click', function () { go(current - 1); });
+    nextBtn.addEventListener('click', function () { go(current + 1); });
+    el.appendChild(top); el.appendChild(stepHost); el.appendChild(nav);
+
+    function renderDots() {
+      dots.innerHTML = '';
+      for (var i = 0; i < TOTAL; i++) {
+        (function (i) {
+          if (i > 0) dots.appendChild(h('span', 'lsn-dotline'));
+          var label = i < STEPS.length ? STEPS[i].title : 'Your turn';
+          var b = h('button', 'lsn-dot', i < STEPS.length ? String(i + 1) : '→');
+          b.type = 'button';
+          b.id = 'lesson-dot-' + (i + 1);
+          b.setAttribute('aria-label', 'Step ' + (i + 1) + ': ' + label);
+          b.title = label;
+          if (i === current) b.setAttribute('aria-current', 'step');
+          if (i < STEPS.length && (progress[i].solved || progress[i].revealed)) b.classList.add('is-done');
+          b.addEventListener('click', function () { go(i); });
+          dots.appendChild(b);
+        })(i);
+      }
+      backBtn.disabled = current === 0;
+      nextBtn.disabled = current === TOTAL - 1;
+      nextBtn.textContent = current === STEPS.length - 1 ? 'Your turn' : 'Next';
+      pos.textContent = (current + 1) + ' of ' + TOTAL;
+    }
+
+    function go(i, opts) {
+      if (i < 0 || i >= TOTAL) return;
+      clearTimers();
+      current = i;
+      renderDots();
+      if (i < STEPS.length) renderStep(i); else renderTurn();
+      try { history.replaceState(null, '', window.location.pathname + window.location.search + '#step-' + (i + 1)); } catch (e) {}
+      if (!(opts && opts.initial)) { try { el.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) {} }
+    }
+
+    function setStatus() {
+      if (engine === 'ready') { status.textContent = 'SQLite running in your browser'; status.classList.remove('is-bad'); }
+      else if (engine === 'failed') { status.textContent = 'SQL engine did not load · showing expected rows'; status.classList.add('is-bad'); }
+      else status.textContent = 'SQL engine loading…';
+      el.setAttribute('data-engine', engine);
+    }
+
+    function freshDb(before) {
+      var d = new SQL.Database();
+      d.run(L.seedSql);
+      if (before) d.run(before);
+      return d;
+    }
+
+    /* Run a step for real. SELECT without prelude: the shared database. Anything else: a fresh copy. */
+    function runStep(S) {
+      if (!SQL) return null;
+      var useFresh = S.kind === 'dml' || !!S.before;
+      var d = useFresh ? freshDb(S.before) : db;
+      var out = { modified: null, error: null, res: null };
+      try {
+        if (S.kind === 'dml') { d.run(S.sql); out.modified = d.getRowsModified(); }
+        else { var r = d.exec(S.sql); out.res = r.length ? r[r.length - 1] : null; }
+      } catch (e) { out.error = String(e && e.message ? e.message : e); }
+      if (S.verify) {
+        try { var v = d.exec(S.verify); out.res = v.length ? v[v.length - 1] : null; } catch (e2) { out.error = out.error || String(e2.message || e2); }
+      }
+      if (useFresh) { try { d.close(); } catch (e3) {} }
+      return out;
+    }
+
+    function runSql(sql) {
+      if (!db) return { error: 'The SQL engine is not available in this page, so queries cannot run here.' };
+      try { var res = db.exec(sql); return { res: res.length ? res[res.length - 1] : null }; }
+      catch (e) { return { error: String(e && e.message ? e.message : e) }; }
+    }
+
+    var pickers = {};
+
+    function buildView(V, narrow) {
+      var T = L.tables[V.table];
+      var cols = V.columns;
+      var tmpl = narrow
+        ? '34px ' + cols.map(function () { return 'minmax(0,1fr)'; }).join(' ')
+        : '44px ' + cols.map(function () { return 'minmax(96px,1fr)'; }).join(' ') + ' minmax(180px,1.4fr)';
+      var minW = narrow ? 0 : 44 + cols.length * 112 + 200;
+      var box = h('div', 'lsn-view');
+      box.appendChild(h('p', 'lsn-label', esc(V.label || ('Rows of ' + V.table)) + ' · ' + T.ids.length + ' rows'));
+      var scroll = h('div', 'lsn-scroll lsn-flowbox');
+      scroll.tabIndex = 0;
+      scroll.setAttribute('role', 'region');
+      scroll.setAttribute('aria-label', 'Rows of the ' + V.table + ' table as each clause runs');
+      scroll.setAttribute('data-view', V.table);
+      var flow = h('div', 'lsn-flow' + (narrow ? ' is-narrow' : ''));
+      if (minW) flow.style.minWidth = minW + 'px';
+      var headRow = h('div', 'lsn-row is-head', '<span class="num" title="' + esc(T.idColumn) + '">id</span>' +
+        cols.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '<span>what happens</span>');
+      headRow.style.gridTemplateColumns = tmpl;
+      flow.appendChild(headRow);
+      var body = h('div');
+      var rowEls = {}, cellEls = {};
+      T.ids.forEach(function (id) {
+        var r = T.rows[id];
+        var row = h('div', 'lsn-row');
+        row.style.gridTemplateColumns = tmpl;
+        row.setAttribute('data-id', id);
+        row.appendChild(h('span', 'num strike', esc(id)));
+        cellEls[id] = {};
+        cols.forEach(function (c) {
+          var v = r[c];
+          var f = fmtWith({}, c, v);
+          var cell = h('span', 'strike' + (typeof v === 'number' ? ' mono' : ''), f === null ? 'NULL' : esc(f));
+          cell.setAttribute('data-base', f === null ? 'NULL' : f);
+          cellEls[id][c] = cell;
+          row.appendChild(cell);
+        });
+        row.appendChild(h('span', 'note'));
+        rowEls[id] = row;
+        body.appendChild(row);
+      });
+      flow.appendChild(body);
+      scroll.appendChild(flow);
+      box.appendChild(scroll);
+      return { box: box, body: body, rowEls: rowEls, cellEls: cellEls, cols: cols };
+    }
+
+    function applyViewState(view, st, animate) {
+      var first = {};
+      if (animate) st.order.forEach(function (id) { if (view.rowEls[id]) first[id] = view.rowEls[id].getBoundingClientRect().top; });
+      st.order.forEach(function (id) { if (view.rowEls[id]) view.body.appendChild(view.rowEls[id]); });
+      var prevGroup = null, gi = -1;
+      st.order.forEach(function (id) {
+        var e = view.rowEls[id];
+        if (!e) return;
+        e.hidden = !!(st.gone && st.gone[id]);
+        e.classList.toggle('is-out', !!st.out[id]);
+        e.classList.toggle('is-cut', !!st.cut[id]);
+        e.classList.toggle('cut-start', st.cutStart === id);
+        e.classList.toggle('is-keep', !!st.keep[id]);
+        if (st.group && st.group[id] !== undefined) {
+          if (st.group[id] !== prevGroup) { gi += 1; prevGroup = st.group[id]; e.classList.toggle('g-start', gi > 0); }
+          else e.classList.remove('g-start');
+          e.classList.toggle('g-alt', gi % 2 === 1);
+        } else { e.classList.remove('g-start'); e.classList.remove('g-alt'); }
+        view.cols.forEach(function (c) {
+          var cell = view.cellEls[id][c];
+          var over = st.vals && st.vals[id] && st.vals[id][c] !== undefined ? st.vals[id][c] : null;
+          cell.textContent = over !== null ? over : cell.getAttribute('data-base');
+          cell.classList.toggle('is-changed', over !== null);
+        });
+        e.querySelector('.note').textContent = st.notes[id] || '';
+      });
+      if (!animate) return;
+      var moved = [];
+      st.order.forEach(function (id) {
+        var e = view.rowEls[id];
+        if (!e || first[id] === undefined || e.hidden) return;
+        var dy = first[id] - e.getBoundingClientRect().top;
+        if (Math.abs(dy) > 0.5) {
+          e.style.transition = 'none';
+          e.style.transform = 'translateY(' + dy + 'px)';
+          e.style.zIndex = '1';
+          moved.push(e);
+        }
+      });
+      if (!moved.length) return;
+      void view.body.offsetHeight;
+      moved.forEach(function (e) {
+        e.style.transition = 'transform 480ms cubic-bezier(.2,.7,.2,1), opacity .35s, background-color .35s';
+        e.style.transform = '';
+      });
+      timers.push(setTimeout(function () { moved.forEach(function (e) { e.style.transition = ''; e.style.zIndex = ''; }); }, 520));
+    }
+
+    function renderStep(i) {
+      var S = STEPS[i], P = progress[i];
+      stepHost.innerHTML = '';
+      stepHost.setAttribute('data-step', String(i + 1));
+
+      var head = h('div');
+      head.appendChild(h('div', 'lsn-kicker', esc(S.kicker)));
+      head.appendChild(h('h2', 'lsn-title', esc(S.title)));
+      stepHost.appendChild(head);
+      S.concept.forEach(function (p) { stepHost.appendChild(h('p', 'lsn-text', esc(p))); });
+
+      var code = h('pre', 'lsn-code');
+      code.setAttribute('aria-label', 'Query');
+      var lineEls = S.lines.map(function (l) { var s = h('span', 'ln', hl(l)); code.appendChild(s); return s; });
+      stepHost.appendChild(code);
+
+      var fs = h('fieldset', 'lsn-predict');
+      fs.appendChild(h('legend', null, 'Predict first'));
+      fs.appendChild(h('p', 'lsn-q', esc(S.question)));
+      var opts = h('div', 'lsn-opts');
+      var fb = h('p', 'lsn-fb'); fb.id = 'lesson-fb-' + (i + 1); fb.setAttribute('aria-live', 'polite');
+      var fbAct = h('div', 'lsn-fbact');
+      var revealBtn = h('button', 'btn', 'Show the answer'); revealBtn.type = 'button'; revealBtn.id = 'lesson-reveal-' + (i + 1);
+      fbAct.appendChild(revealBtn);
+      var optEls = S.options.map(function (o, oi) {
+        var b = h('button', 'lsn-opt', '<span class="lsn-letter">' + o.letter + '</span><span>' + esc(o.text) + '</span>');
+        b.type = 'button';
+        b.id = 'lesson-s' + (i + 1) + '-opt-' + o.letter;
+        b.addEventListener('click', function () { pick(oi); });
+        opts.appendChild(b);
+        return b;
+      });
+      fs.appendChild(opts); fs.appendChild(fb); fs.appendChild(fbAct);
+      stepHost.appendChild(fs);
+
+      var runRow = h('div', 'lsn-runrow');
+      var runBtn = h('button', 'btn primary', 'Run query'); runBtn.type = 'button'; runBtn.id = 'lesson-run-' + (i + 1);
+      var hint = h('span', 'lsn-hint');
+      runRow.appendChild(runBtn); runRow.appendChild(hint);
+      stepHost.appendChild(runRow);
+
+      var stagesBar = h('div', 'lsn-stages');
+      stagesBar.setAttribute('role', 'group');
+      stagesBar.setAttribute('aria-label', 'Step through the clauses');
+      var stageBtns = S.stages.map(function (st, si) {
+        if (si > 0) stagesBar.appendChild(h('span', 'arrow', '→'));
+        var b = h('button', 'btn lsn-sbtn', esc(st.label));
+        b.type = 'button';
+        b.id = 'lesson-s' + (i + 1) + '-stage-' + (si + 1);
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () { clearTimers(); showStage(si, true); });
+        stagesBar.appendChild(b);
+        return b;
+      });
+      stepHost.appendChild(stagesBar);
+
+      var narrow = false;
+      try { narrow = window.matchMedia('(max-width: 560px)').matches; } catch (e) {}
+      var viewsHost = h('div', 'lsn-views' + (S.views.length > 1 ? ' is-multi' : ''));
+      var views = S.views.map(function (V) { var v = buildView(V, narrow); viewsHost.appendChild(v.box); v.table = V.table; return v; });
+      stepHost.appendChild(viewsHost);
+      var caption = h('p', 'lsn-caption'); caption.setAttribute('aria-live', 'polite');
+      stepHost.appendChild(caption);
+      var resultHost = h('div', 'lsn-result');
+      resultHost.id = 'lesson-result-' + (i + 1);
+      stepHost.appendChild(resultHost);
+
+      function unlocked() { return P.solved || P.revealed; }
+
+      function showStage(si, animate) {
+        P.stage = si;
+        stageBtns.forEach(function (b, bi) { b.setAttribute('aria-pressed', bi === si ? 'true' : 'false'); });
+        var lines = S.stages[si].lines || [];
+        lineEls.forEach(function (l, li) { l.classList.toggle('is-active', unlocked() && lines.indexOf(li) !== -1); });
+        views.forEach(function (v) { applyViewState(v, S.stages[si].views[v.table], animate && !reduceMotion()); });
+        caption.textContent = unlocked() ? S.stages[si].caption : 'Answer the question above to unlock Run and the clause-by-clause view.';
+        stepHost.setAttribute('data-stage', String(si + 1));
+      }
+
+      function renderResult() {
+        resultHost.innerHTML = '';
+        if (!P.ran) return;
+        var out = P.result;
+        resultHost.appendChild(h('p', 'lsn-label', 'Result'));
+        resultHost.setAttribute('data-source', out.fallback ? 'expected' : 'sqlite');
+        resultHost.setAttribute('data-error', out.error ? '1' : '0');
+        if (out.modified !== null && out.modified !== undefined) {
+          var verb = (/^\s*(\w+)/.exec(S.sql) || [, 'CHANGED'])[1].toUpperCase();
+          var m = h('p', 'lsn-modified', verb + ' ' + out.modified);
+          m.id = 'lesson-modified-' + (i + 1);
+          m.setAttribute('data-modified', String(out.modified));
+          resultHost.appendChild(m);
+        }
+        if (out.error) {
+          var er = h('p', 'lsn-error', esc((out.fallback ? 'The database rejects this statement:\n' : 'SQLite rejected it:\n') + out.error));
+          resultHost.appendChild(er);
+        }
+        if (S.verify && out.res) resultHost.appendChild(h('p', 'lsn-label', 'Then the check query'));
+        if (out.res && out.res.values.length) {
+          resultHost.appendChild(resultTable(out.res.columns, out.res.values, S.display));
+          var n = out.res.values.length;
+          var note = h('p', 'lsn-note', n + (n === 1 ? ' row' : ' rows') + (out.fallback
+            ? '. The SQL engine did not load, so these are the expected rows, worked out when this page was built.'
+            : ' returned by SQLite in your browser.') + (S.dialectNote ? ' ' + esc(S.dialectNote) : ''));
+          note.id = 'lesson-rowcount-' + (i + 1);
+          note.setAttribute('data-rows', String(n));
+          resultHost.appendChild(note);
+        } else if (!out.error && S.kind !== 'dml') {
+          resultHost.appendChild(h('p', 'lsn-note', 'The query ran. No rows came back.'));
+        } else if (out.error && S.dialectNote) {
+          resultHost.appendChild(h('p', 'lsn-note', esc(S.dialectNote)));
+        }
+      }
+
+      function refreshLock() {
+        var u = unlocked();
+        runBtn.disabled = !u;
+        stageBtns.forEach(function (b) { b.disabled = !u; });
+        hint.textContent = u ? (P.ran ? 'Use the clause buttons to replay it one step at a time.' : 'Run it, then watch the rows move.') : 'Answer the question to unlock Run.';
+        optEls.forEach(function (b, oi) {
+          var o = S.options[oi];
+          b.classList.toggle('is-wrong', !!P.wrong[oi]);
+          b.classList.toggle('is-right', u && !!o.ok);
+          b.disabled = u;
+          b.setAttribute('aria-pressed', P.wrong[oi] || (u && o.ok) ? 'true' : 'false');
+        });
+        fbAct.hidden = u || !Object.keys(P.wrong).length;
+        fb.innerHTML = P.fb;
+      }
+
+      function pick(oi) {
+        var o = S.options[oi];
+        if (unlocked()) return;
+        if (o.ok) { P.solved = true; P.fb = '<span class="tag-good">Correct.</span> ' + esc(S.right); }
+        else { P.wrong[oi] = true; P.fb = '<span class="tag-bad">Not quite.</span> ' + esc(o.why) + ' Pick again, or show the answer.'; }
+        refreshLock();
+        renderDots();
+        if (P.solved) showStage(P.stage, false);
+      }
+      pickers[i] = pick;
+
+      revealBtn.addEventListener('click', function () {
+        P.revealed = true;
+        var right = S.options.filter(function (o) { return o.ok; })[0];
+        P.fb = 'The answer is <strong>' + right.letter + ': ' + esc(right.text) + '</strong>. ' + esc(S.right);
+        refreshLock();
+        renderDots();
+        showStage(P.stage, false);
+        runBtn.focus();
+      });
+
+      runBtn.addEventListener('click', function () {
+        clearTimers();
+        var out = SQL ? runStep(S) : null;
+        if (!out) out = { res: S.expected.values.length || S.expected.columns.length ? { columns: S.expected.columns, values: S.expected.values } : null, modified: S.expected.modified, error: S.expected.error, fallback: true };
+        P.ran = true; P.result = out;
+        refreshLock();
+        renderResult();
+        var last = S.stages.length - 1;
+        if (reduceMotion()) { showStage(last, false); return; }
+        showStage(0, false);
+        for (var si = 1; si <= last; si++) {
+          (function (si) { timers.push(setTimeout(function () { showStage(si, true); }, si * 1100)); })(si);
+        }
+      });
+
+      refreshLock();
+      showStage(P.stage, false);
+      renderResult();
+    }
+
+    function renderTurn() {
+      stepHost.innerHTML = '';
+      stepHost.setAttribute('data-step', String(TOTAL));
+      var head = h('div');
+      head.appendChild(h('div', 'lsn-kicker', 'Step ' + TOTAL + ' · Your turn'));
+      head.appendChild(h('h2', 'lsn-title', 'Write your own query'));
+      stepHost.appendChild(head);
+      stepHost.appendChild(h('p', 'lsn-text', 'The tables from the Day ' + L.day + ' setup are loaded. Change the query below and run it. Mistakes are fine; the error message tells you what SQLite could not read.'));
+      var ideas = h('div', 'lsn-ideas');
+      ideas.setAttribute('role', 'group');
+      ideas.setAttribute('aria-label', 'Queries from today\'s lesson to load');
+      var ta;
+      L.turn.ideas.forEach(function (idea, ii) {
+        var b = h('button', 'chip lsn-idea', esc(idea.t));
+        b.type = 'button';
+        b.id = 'lesson-idea-' + (ii + 1);
+        b.addEventListener('click', function () { ta.value = idea.q; turnText = idea.q; ta.focus(); });
+        ideas.appendChild(b);
+      });
+      stepHost.appendChild(ideas);
+      var label = h('label', 'lsn-label', 'Your query');
+      label.setAttribute('for', 'lesson-editor');
+      stepHost.appendChild(label);
+      ta = h('textarea', 'lsn-editor');
+      ta.id = 'lesson-editor';
+      ta.spellcheck = false;
+      ta.value = turnText;
+      ta.setAttribute('autocapitalize', 'off');
+      ta.addEventListener('input', function () { turnText = ta.value; });
+      ta.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+      stepHost.appendChild(ta);
+      var row = h('div', 'lsn-runrow');
+      var runBtn = h('button', 'btn primary', 'Run query'); runBtn.type = 'button'; runBtn.id = 'lesson-turn-run';
+      var resetBtn = h('button', 'btn', 'Reset data'); resetBtn.type = 'button'; resetBtn.id = 'lesson-turn-reset';
+      row.appendChild(runBtn); row.appendChild(resetBtn); row.appendChild(h('span', 'lsn-hint', 'Ctrl+Enter also runs it.'));
+      stepHost.appendChild(row);
+      var out = h('div', 'lsn-result');
+      out.id = 'lesson-turn-result';
+      out.setAttribute('aria-live', 'polite');
+      stepHost.appendChild(out);
+      function run() {
+        out.innerHTML = '';
+        out.appendChild(h('p', 'lsn-label', 'Result'));
+        if (!db) {
+          out.appendChild(h('p', 'lsn-error', engine === 'loading' ? 'The SQL engine is still loading. Try again in a moment.' : 'The SQL engine did not load in this page, so your own queries cannot run here. The lesson steps still work with the expected rows.'));
+          return;
+        }
+        var r = runSql(ta.value);
+        if (r.error) { out.appendChild(h('p', 'lsn-error', 'SQLite could not run this query.\n' + esc(r.error))); return; }
+        if (!r.res || !r.res.values.length) { out.appendChild(h('p', 'lsn-note', 'The query ran. No rows came back.')); return; }
+        out.appendChild(resultTable(r.res.columns, r.res.values, {}));
+        var n = r.res.values.length;
+        out.appendChild(h('p', 'lsn-note', n + (n === 1 ? ' row' : ' rows') + (n > 200 ? ', first 200 shown.' : '.') + ' Changes you make to the tables stay until you reset the data.'));
+      }
+      runBtn.addEventListener('click', run);
+      resetBtn.addEventListener('click', function () {
+        if (SQL) { try { if (db) db.close(); } catch (e) {} db = freshDb(null); }
+        out.innerHTML = '';
+        out.appendChild(h('p', 'lsn-note', SQL ? 'The tables are back to the Day ' + L.day + ' setup rows.' : 'Nothing to reset: the SQL engine is not loaded.'));
+      });
+      if (db) run();
+    }
+
+    var start = 0;
+    var m = /^#step-(\d+)$/.exec(window.location.hash || '');
+    if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), TOTAL - 1);
+    renderDots();
+    go(start, { initial: true });
+    var ans = (params.get('answer') || '').toUpperCase();
+    if (ans && start < STEPS.length) {
+      var oi = -1;
+      STEPS[start].options.forEach(function (o, k) { if (o.letter === ans) oi = k; });
+      if (oi >= 0 && pickers[start]) pickers[start](oi);
+    }
+
+    if (typeof window.initSqlJs !== 'function') { engine = 'failed'; setStatus(); }
+    else {
+      setStatus();
+      try {
+        window.initSqlJs().then(function (S) {
+          SQL = S;
+          db = freshDb(null);
+          engine = 'ready';
+          setStatus();
+          if (current === STEPS.length) renderTurn();
+        }).catch(function () { engine = 'failed'; setStatus(); });
+      } catch (e) { engine = 'failed'; setStatus(); }
+    }
+  }
+
+  mount(document.getElementById('lesson'));
+})();
+</script>
+</body>
+</html>
